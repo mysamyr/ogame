@@ -1,0 +1,204 @@
+:root {
+  --bg: #0b0f14;
+  --panel: #0f1720;
+  --muted: #b3c0d4;
+  --accent: #8ed7fc;
+  --accent-2: #60a5fa;
+  --danger: #fb7185;
+  --card-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #031021 0%, var(--bg) 100%);
+  color: #e6eef6;
+  padding: 24px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+header {
+  margin-bottom: 18px;
+}
+h1 {
+  margin: 0;
+  font-weight: 600;
+}
+main {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.card {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.01)
+  );
+  padding: 16px;
+  border-radius: 10px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 8px 10px;
+  margin-top: 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+}
+.buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+button {
+  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  color: #032;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+button.secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
+.message {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+#notes-list .date-group {
+  margin-bottom: 18px;
+}
+.group-title {
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.planet-block {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+.note-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.02);
+}
+.note-row:last-child {
+  border-bottom: none;
+}
+.note-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+.note-actions {
+  white-space: nowrap;
+  text-align: right !important;
+}
+.note-actions button {
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  margin-left: 8px;
+  font-size: 16px;
+}
+.note-actions button.copy {
+  color: #d9b3ff;
+}
+.note-actions button.del {
+  color: var(--danger);
+}
+
+/* Notes table styles */
+.notes-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+.notes-table th,
+.notes-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+}
+.notes-table thead th {
+  color: var(--accent);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.04);
+}
+
+.cell-boolean {
+  width: 80px;
+}
+.cell-boolean input {
+  transform: scale(1);
+  margin: 0;
+  vertical-align: middle;
+}
+
+/* Form field row layout for left checkbox */
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.field-row .field-checkbox {
+  margin-left: 0;
+  margin-right: 4px;
+}
+.field-row .field-label {
+  flex: 1;
+}
+
+/* Make tables stretch to full width of container */
+.planet-block table {
+  width: 100%;
+}
+
+footer {
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
