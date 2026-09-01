@@ -45,9 +45,13 @@ export default function ActiveForm() {
       if (field.type === FieldKind.BOOLEAN) {
         defaults[field.name] = typeof val === 'boolean' ? val : false;
       } else if (field.type === FieldKind.NUMBER) {
-        defaults[field.name] = typeof val === 'number' ? val : 0;
+        defaults[field.name] = typeof val === 'number' ? val : '';
       } else if (field.type === FieldKind.TIME) {
-        defaults[field.name] = typeof val === 'string' ? val : nowTime();
+        defaults[field.name] =
+          typeof val === 'string' ? val : field.required ? nowTime() : '';
+      } else if (field.type === FieldKind.DATE) {
+        defaults[field.name] =
+          typeof val === 'string' ? val : field.required ? todayDate() : '';
       } else {
         defaults[field.name] = typeof val === 'string' ? val : '';
       }
@@ -102,47 +106,63 @@ export default function ActiveForm() {
   };
 
   return (
-    <FormProvider {...methods}>
-      <form onSubmit={event => void handleSubmit(onSubmit)(event)}>
-        <input type="hidden" value={activeNote?.id ?? ''} readOnly />
+    <>
+      {selectedType ? (
+        <>
+          <h2>{activeNote ? 'Edit Note' : 'Create Note'}</h2>
 
-        <FieldInput
-          field={{
-            name: 'planet',
-            type: FieldKind.STRING,
-            required: true,
-            id: 0,
-          }}
-          placeholder="1:123:12"
-          rules={{
-            pattern: {
-              value: PLANET_COORDINATES_REGEX,
-              message: 'Planet must be in format x:xxx:xx',
-            },
-          }}
-        />
+          <FormProvider {...methods}>
+            <form
+              className={styles.form}
+              onSubmit={event => void handleSubmit(onSubmit)(event)}
+            >
+              <input type="hidden" value={activeNote?.id ?? ''} readOnly />
 
-        <FieldInput
-          field={{ name: 'date', type: FieldKind.DATE, required: true, id: 0 }}
-        />
+              <FieldInput
+                field={{
+                  name: 'planet',
+                  type: FieldKind.STRING,
+                  required: true,
+                  id: 0,
+                }}
+                placeholder="1:123:12"
+                rules={{
+                  pattern: {
+                    value: PLANET_COORDINATES_REGEX,
+                    message: 'Planet must be in format x:xxx:xx',
+                  },
+                }}
+              />
 
-        <div>
-          {activeSchema?.fields.map(field => (
-            <FieldInput key={field.name} field={field} />
-          ))}
-        </div>
+              <FieldInput
+                field={{
+                  name: 'date',
+                  type: FieldKind.DATE,
+                  required: true,
+                  id: 0,
+                }}
+              />
 
-        <div className={styles.buttons}>
-          <Button type="submit" id="save-btn">
-            {activeNote ? 'Update' : 'Save'}
-          </Button>
-          {activeNote ? (
-            <Button variant={ButtonVariant.SECONDARY} onClick={resetForm}>
-              Cancel
-            </Button>
-          ) : null}
-        </div>
-      </form>
-    </FormProvider>
+              {activeSchema?.fields.map(field => (
+                <FieldInput key={field.name} field={field} />
+              ))}
+
+              <div className={styles.buttons}>
+                <Button type="submit" id="save-btn">
+                  {activeNote ? 'Update' : 'Save'}
+                </Button>
+                {activeNote ? (
+                  <Button variant={ButtonVariant.SECONDARY} onClick={resetForm}>
+                    Cancel
+                  </Button>
+                ) : null}
+              </div>
+            </form>
+          </FormProvider>
+        </>
+      ) : (
+        <p className={styles.placeholder}>No schema available</p>
+      )}
+    </>
   );
 }

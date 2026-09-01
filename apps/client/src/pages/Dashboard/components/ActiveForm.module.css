@@ -1,3 +1,9 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .buttons {
   display: flex;
   gap: 10px;
@@ -8,4 +14,12 @@
   margin-top: 10px;
   color: var(--muted);
   font-size: 13px;
+}
+
+.placeholder {
+  color: var(--placeholder);
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+  padding: 24px 0;
 }

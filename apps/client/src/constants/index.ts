@@ -2,7 +2,6 @@ export enum ButtonVariant {
   PRIMARY = 'primary',
   SECONDARY = 'secondary',
   DANGER = 'danger',
-  SUCCESS = 'success',
   TEXT = 'text',
   ICON = 'icon',
 }
@@ -13,6 +12,18 @@ export enum FieldKind {
   BOOLEAN = 'boolean',
   DATE = 'date',
   TIME = 'time',
+}
+
+export enum FilterOperator {
+  EQUALS = '=',
+  NOT_EQUALS = '!=',
+  LESS_THAN = '<',
+  GREATER_THAN = '>',
+}
+
+export enum FilterLogicalOperator {
+  AND = 'AND',
+  OR = 'OR',
 }
 
 export const PLANET_COORDINATES_REGEX = /^\d:\d{1,3}:(?:[1-9]|1[0-6])$/;

@@ -126,7 +126,7 @@ export default function Header() {
 
   return (
     <header className={styles.header}>
-      <h1 className={styles.title}>OGame Notes</h1>
+      <h1>OGame Notes</h1>
       <div className={styles.controls}>
         <Dropdown
           className={styles.typeSelect}

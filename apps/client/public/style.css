@@ -1,13 +1,56 @@
 :root {
-  --bg: #0b0f14;
-  --panel: #0f1720;
-  --muted: #b3c0d4;
-  --accent: #8ed7fc;
-  --accent-2: #60a5fa;
-  --danger: #fb7185;
-  --success: #34d399;
+  --slate-900: #0f1720;
+  --slate-800: #1d2127;
+  --white: #f4f6f8;
+  --red-500: #fb7185;
+  --violet-300: #d9b3ff;
+  --cyan-300: #8ed7fc;
+  --blue-400: #60a5fa;
+  --green-400: #34d399;
+  --white-1: rgba(255, 255, 255, 0.01);
+  --white-4: rgba(255, 255, 255, 0.04);
+  --white-6: rgba(255, 255, 255, 0.06);
+  --white-8: rgba(255, 255, 255, 0.08);
+  --white-16: rgba(255, 255, 255, 0.16);
+  --white-30: rgba(255, 255, 255, 0.3);
+  --white-70: rgba(255, 255, 255, 0.7);
+
+  --overlay: rgba(4, 8, 16, 0.72);
+  --panel: var(--slate-900);
+  --surface: var(--slate-800);
+  --text: var(--white);
+  --muted: var(--white-70);
+  --accent: var(--cyan-300);
+  --danger: var(--red-500);
+  --success: var(--green-400);
+  --input-border: var(--white-4);
+  --input-border-focus: var(--white-30);
+  --input-bg: var(--white-8);
+  --table-border: var(--white-6);
+  --border: var(--white-16);
+  --placeholder: var(--white-30);
   --button-text: #032;
   --card-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: linear-gradient(
+    180deg,
+    var(--slate-900) 0%,
+    var(--slate-800) 100%
+  );
+  color: var(--text);
+  padding: 24px;
   font-family:
     Inter,
     ui-sans-serif,
@@ -17,39 +60,16 @@
     Roboto,
     'Helvetica Neue',
     Arial;
-}
-
-* {
-  box-sizing: border-box;
-}
-html,
-body {
-  height: 100%;
-}
-body {
-  margin: 0;
-  background: linear-gradient(180deg, #031021 0%, var(--bg) 100%);
-  color: #e6eef6;
-  padding: 24px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 13px;
-  color: var(--muted);
+h1 {
+  margin: 0;
+  font-weight: 600;
+  color: var(--accent);
 }
-input,
-select,
-textarea {
-  width: 100%;
-  padding: 8px 10px;
-  margin-top: 6px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  background: transparent;
-  color: inherit;
-  font-size: 14px;
+
+h2 {
+  margin-bottom: 12px;
 }

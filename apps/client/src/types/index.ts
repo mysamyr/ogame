@@ -1,4 +1,8 @@
-import { FieldKind } from '../constants/index.js';
+import {
+  FieldKind,
+  FilterLogicalOperator,
+  FilterOperator,
+} from '../constants/index.js';
 
 export type SchemaField = {
   id: number;
@@ -32,10 +36,6 @@ export interface NoteRecord extends Record<string, unknown> {
   date: string;
   type: string;
 }
-
-export type FilterOperator = '=' | '!=' | '<' | '>';
-
-export type FilterLogicalOperator = 'AND' | 'OR';
 
 export type FilterColumn = {
   id: string;

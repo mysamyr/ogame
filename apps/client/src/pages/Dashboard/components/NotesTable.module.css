@@ -18,13 +18,13 @@
 .notesTable td {
   padding: 8px 10px;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--table-border);
   font-size: 13px;
 }
 
 .notesTable thead th {
   color: var(--accent);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.04);
+  border-bottom: 2px solid var(--table-border);
 }
 
 .cellBoolean {
@@ -55,7 +55,7 @@
 }
 
 .noteActions button.copy {
-  color: #d9b3ff;
+  color: var(--violet-300);
 }
 
 .noteActions button.del {

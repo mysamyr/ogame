@@ -14,7 +14,6 @@ const variantClassMap: Record<ButtonVariant, string | undefined> = {
   [ButtonVariant.PRIMARY]: styles.primary,
   [ButtonVariant.SECONDARY]: styles.secondary,
   [ButtonVariant.DANGER]: styles.danger,
-  [ButtonVariant.SUCCESS]: styles.success,
   [ButtonVariant.TEXT]: styles.text,
   [ButtonVariant.ICON]: styles.icon,
 };

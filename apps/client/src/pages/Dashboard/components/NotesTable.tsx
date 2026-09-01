@@ -28,10 +28,10 @@ import type {
   NoteRecord,
   SchemaField,
 } from '../../../types/index.js';
+import { matchesFilterRules } from '../../../utils/filtering.js';
 import { formatNumber } from '../../../utils/number.js';
 import { toCapital } from '../../../utils/string.js';
 
-import { matchesFilterRules } from '../../../utils/filtering.js';
 import styles from './NotesTable.module.css';
 
 type Props = {

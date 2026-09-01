@@ -1,4 +1,6 @@
 import { FilterIcon } from '../../../components/icons/index.js';
+import { Button } from '../../../components/index.js';
+import { ButtonVariant } from '../../../constants/index.js';
 
 import styles from './NotesToolbar.module.css';
 
@@ -13,8 +15,8 @@ export default function NotesToolbar({
 }: Props) {
   return (
     <div className={styles.toolbar}>
-      <button
-        type="button"
+      <Button
+        variant={ButtonVariant.ICON}
         className={styles.filterButton}
         onClick={onOpenFilters}
         aria-label="Open filters"
@@ -24,7 +26,7 @@ export default function NotesToolbar({
         {activeFilterCount > 0 ? (
           <span className={styles.badge}>{activeFilterCount}</span>
         ) : null}
-      </button>
+      </Button>
     </div>
   );
 }

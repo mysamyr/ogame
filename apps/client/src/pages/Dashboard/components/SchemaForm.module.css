@@ -2,27 +2,55 @@
   margin-bottom: 10px;
 }
 
+.row input {
+  margin-top: 6px;
+}
+
 .label {
   display: block;
   margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .fieldsHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   margin-bottom: 8px;
 }
 
 .fieldRow {
   display: grid;
-  grid-template-columns: 1fr 1fr auto auto;
+  grid-template-columns: 1fr 1fr 90px auto;
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
 }
 
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
 .error {
   margin: 8px 0 0;
   color: var(--danger);
+}
+
+.actions,
+.submitActions {
+  display: flex;
+  align-items: center;
+}
+
+.actions {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.submitActions {
+  gap: 8px;
 }

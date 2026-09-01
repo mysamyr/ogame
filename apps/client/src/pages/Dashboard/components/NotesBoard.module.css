@@ -1,4 +1,18 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .noteMeta {
   font-size: 13px;
   color: var(--muted);
+}
+
+.placeholder {
+  color: var(--placeholder);
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+  padding: 24px 0;
 }

@@ -9,6 +9,7 @@ import { useSchemas, useNotes } from '../../hooks/index.js';
 import ActiveForm from './components/ActiveForm.js';
 import Header from './components/Header.js';
 import NotesBoard from './components/NotesBoard.js';
+
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
@@ -52,25 +53,11 @@ export default function Dashboard() {
 
       <main className={styles.main}>
         <section className={styles.card}>
-          <h2 className={styles.header}>
-            {activeNote ? 'Edit Note' : 'Create Note'}
-          </h2>
-
-          {schemas.length ? (
-            <ActiveForm />
-          ) : (
-            <p className={styles.placeholder}>No schema available</p>
-          )}
+          <ActiveForm />
         </section>
 
         <section className={styles.card}>
-          <h2 className={styles.header}>Notes</h2>
-
-          {schemas.length ? (
-            <NotesBoard />
-          ) : (
-            <p className={styles.placeholder}>No schema available</p>
-          )}
+          <NotesBoard />
         </section>
       </main>
     </>

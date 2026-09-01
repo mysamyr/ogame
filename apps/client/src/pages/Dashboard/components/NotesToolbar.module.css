@@ -8,31 +8,6 @@
 
 .filterButton {
   position: relative;
-  display: grid;
-  width: 36px;
-  height: 36px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.filterButton:hover,
-.filterButton:focus-visible {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.filterButton:focus-visible {
-  outline: 2px solid var(--muted);
-  outline-offset: 2px;
-}
-
-.filterButton svg {
-  width: 18px;
-  height: 18px;
 }
 
 .badge {
@@ -45,8 +20,8 @@
   padding: 0 4px;
   place-items: center;
   border-radius: 9px;
-  background: var(--accent-2);
-  color: #031021;
+  background: var(--blue-400);
+  color: var(--slate-900);
   font-size: 11px;
   font-weight: 700;
 }

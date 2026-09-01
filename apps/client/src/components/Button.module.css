@@ -18,25 +18,31 @@
 }
 
 .primary {
-  background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  background: linear-gradient(180deg, var(--cyan-300), var(--blue-400));
   color: var(--button-text);
   box-shadow: 0 4px 10px var(--card-shadow);
 }
 
+.primary:hover,
+.primary:focus-visible {
+  background: linear-gradient(90deg, var(--cyan-300), var(--blue-400));
+}
+
 .secondary {
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
   color: var(--muted);
+}
+
+.secondary:hover,
+.secondary:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .danger {
   background-color: var(--danger);
   color: var(--button-text);
-}
-
-.success {
-  background-color: var(--success);
-  color: var(--muted);
 }
 
 .text {
@@ -60,9 +66,16 @@
   height: 36px;
   padding: 0;
   place-items: center;
+  border: 1px solid var(--white-8);
   border-radius: 6px;
   background: transparent;
-  color: var(--danger);
+  color: var(--muted);
+}
+
+.icon:hover,
+.icon:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .icon svg {

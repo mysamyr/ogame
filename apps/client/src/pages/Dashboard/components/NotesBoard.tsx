@@ -30,8 +30,8 @@ export default function NotesBoard() {
   const { showSnackbar } = useSnackbar();
   const [searchParams] = useSearchParams();
   const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
-  const selectedType = searchParams.get('type') ?? '';
 
+  const selectedType = searchParams.get('type') ?? '';
   const filterColumns = useMemo<FilterColumn[]>(() => {
     const schema = schemas.find(item => item.id === selectedType);
     return [
@@ -111,24 +111,33 @@ export default function NotesBoard() {
   }, [selectedType, notes]);
 
   return (
-    <div id="notes-list">
-      <NotesToolbar
-        activeFilterCount={filterRules.length}
-        onOpenFilters={handleOpenFilters}
-      />
-      {displayedNotes.length === 0 ? (
-        <div className={styles.noteMeta}>No notes yet</div>
+    <>
+      {selectedType ? (
+        <>
+          <div className={styles.header}>
+            <h2>Notes</h2>
+            <NotesToolbar
+              activeFilterCount={filterRules.length}
+              onOpenFilters={handleOpenFilters}
+            />
+          </div>
+          {displayedNotes.length === 0 ? (
+            <div className={styles.noteMeta}>No notes</div>
+          ) : (
+            <NotesTable
+              notes={displayedNotes}
+              selectedType={selectedType}
+              filterColumns={filterColumns}
+              filterRules={filterRules}
+              onCopy={handleCopy}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
+        </>
       ) : (
-        <NotesTable
-          notes={displayedNotes}
-          selectedType={selectedType}
-          filterColumns={filterColumns}
-          filterRules={filterRules}
-          onCopy={handleCopy}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+        <p className={styles.placeholder}>No schema available</p>
       )}
-    </div>
+    </>
   );
 }

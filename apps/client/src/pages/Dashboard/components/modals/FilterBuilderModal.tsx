@@ -1,13 +1,14 @@
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { DeleteIcon } from '../../../../components/icons/index.js';
-import { Button, Dropdown } from '../../../../components/index.js';
-import { ButtonVariant, FieldKind } from '../../../../constants/index.js';
-import type {
-  FilterColumn,
+import { Button, Dropdown, Input } from '../../../../components/index.js';
+import {
+  ButtonVariant,
+  FieldKind,
+  FilterLogicalOperator,
   FilterOperator,
-  FilterRule,
-} from '../../../../types/index.js';
+} from '../../../../constants/index.js';
+import type { FilterColumn, FilterRule } from '../../../../types/index.js';
 
 import styles from './FilterBuilderModal.module.css';
 
@@ -22,16 +23,21 @@ type FilterFormValues = {
   rules: FilterRule[];
 };
 
-const OPERATOR_OPTIONS: { label: FilterOperator; value: FilterOperator }[] = [
-  { label: '=', value: '=' },
-  { label: '!=', value: '!=' },
-  { label: '<', value: '<' },
-  { label: '>', value: '>' },
+const OPERATOR_OPTIONS: { label: string; value: FilterOperator }[] = [
+  { label: FilterOperator.EQUALS, value: FilterOperator.EQUALS },
+  { label: FilterOperator.NOT_EQUALS, value: FilterOperator.NOT_EQUALS },
+  { label: FilterOperator.LESS_THAN, value: FilterOperator.LESS_THAN },
+  { label: FilterOperator.GREATER_THAN, value: FilterOperator.GREATER_THAN },
+];
+
+const STRING_OPERATOR_OPTIONS: { label: string; value: FilterOperator }[] = [
+  { label: FilterOperator.EQUALS, value: FilterOperator.EQUALS },
+  { label: FilterOperator.NOT_EQUALS, value: FilterOperator.NOT_EQUALS },
 ];
 
 const LOGICAL_OPERATOR_OPTIONS = [
-  { label: 'AND', value: 'AND' },
-  { label: 'OR', value: 'OR' },
+  { label: FilterLogicalOperator.AND, value: FilterLogicalOperator.AND },
+  { label: FilterLogicalOperator.OR, value: FilterLogicalOperator.OR },
 ];
 
 const BOOLEAN_OPTIONS = [
@@ -42,9 +48,9 @@ const BOOLEAN_OPTIONS = [
 function createRule(columns: FilterColumn[]): FilterRule {
   return {
     column: columns[0]?.id ?? '',
-    operator: '=',
+    operator: FilterOperator.EQUALS,
     value: '',
-    logicalOperator: 'AND',
+    logicalOperator: FilterLogicalOperator.AND,
   };
 }
 
@@ -63,7 +69,9 @@ export default function FilterBuilderModal({
 }: Props) {
   const { control, handleSubmit, register, setValue, watch } =
     useForm<FilterFormValues>({
-      defaultValues: { rules: initialRules },
+      defaultValues: {
+        rules: initialRules.length > 0 ? initialRules : [createRule(columns)],
+      },
     });
   const { fields, append, remove, replace } = useFieldArray({
     control,
@@ -123,26 +131,36 @@ export default function FilterBuilderModal({
                       shouldDirty: true,
                     });
                     if (selectedColumn?.type === FieldKind.BOOLEAN) {
-                      setValue(`rules.${index}.operator`, '=', {
-                        shouldDirty: true,
-                      });
+                      setValue(
+                        `rules.${index}.operator`,
+                        FilterOperator.EQUALS,
+                        {
+                          shouldDirty: true,
+                        }
+                      );
                     }
                     setValue(`rules.${index}.value`, '', { shouldDirty: true });
                   }}
                 />
-                {fieldType !== FieldKind.BOOLEAN ? (
+                {fieldType == FieldKind.BOOLEAN ? null : fieldType ==
+                  FieldKind.STRING ? (
+                  <Dropdown
+                    options={STRING_OPERATOR_OPTIONS}
+                    {...register(`rules.${index}.operator`)}
+                  />
+                ) : (
                   <Dropdown
                     options={OPERATOR_OPTIONS}
                     {...register(`rules.${index}.operator`)}
                   />
-                ) : null}
+                )}
                 {fieldType === FieldKind.BOOLEAN ? (
                   <Dropdown
                     options={BOOLEAN_OPTIONS}
                     {...register(`rules.${index}.value`)}
                   />
                 ) : (
-                  <input
+                  <Input
                     type={getInputType(fieldType)}
                     {...register(`rules.${index}.value`)}
                   />

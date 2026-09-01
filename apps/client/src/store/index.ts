@@ -38,7 +38,7 @@ interface ModalSlice {
   closeModal: () => void;
 }
 
-export type ModalCloseReason = 'backdrop' | 'escape' | 'programmatic';
+export type ModalCloseReason = 'escape' | 'programmatic';
 
 export interface ModalConfig<
   T extends Record<string, unknown> = Record<string, unknown>,

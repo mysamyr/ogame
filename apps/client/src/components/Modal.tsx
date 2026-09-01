@@ -40,11 +40,6 @@ export default function Modal({
         event.preventDefault();
         onRequestClose('escape');
       }}
-      onClick={event => {
-        if (event.target === event.currentTarget) {
-          onRequestClose('backdrop');
-        }
-      }}
     >
       {ModalComponent ? <ModalComponent {...modalProps} /> : null}
     </dialog>
