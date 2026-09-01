@@ -41,7 +41,7 @@ export async function ensureStoreExists(): Promise<void> {
       id TEXT PRIMARY KEY,
       planet TEXT NOT NULL,
       date TEXT NOT NULL,
-      type TEXT NOT NULL,
+      schema TEXT NOT NULL,
       payload TEXT NOT NULL
     )
   `);

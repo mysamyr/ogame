@@ -7,16 +7,16 @@ export async function getAllNotes(): Promise<Note[]> {
     id: string;
     planet: string;
     date: string;
-    type: string;
+    schema: string;
     payload: string;
   }>(
-    'SELECT id, planet, date, type, payload FROM notes ORDER BY date DESC, id DESC'
+    'SELECT id, planet, date, schema, payload FROM notes ORDER BY date DESC, id DESC'
   );
   return rows.map(row => ({
     id: row.id,
     planet: row.planet,
     date: row.date,
-    type: row.type,
+    schema: row.schema,
     ...(JSON.parse(row.payload) as Record<string, unknown>),
   }));
 }
@@ -25,12 +25,12 @@ export async function addNote(
   note: Omit<Note, 'id'> & { id?: string }
 ): Promise<Note> {
   const id = note.id ?? uuid();
-  const { planet, date, type, ...payload } = note;
+  const { planet, date, schema, ...payload } = note;
   const toStore = { ...(note as Omit<Note, 'id'>), id } as Note;
 
   await run(
-    'INSERT INTO notes (id, planet, date, type, payload) VALUES (?, ?, ?, ?, ?)',
-    [id, planet, date, type, JSON.stringify(payload)]
+    'INSERT INTO notes (id, planet, date, schema, payload) VALUES (?, ?, ?, ?, ?)',
+    [id, planet, date, schema, JSON.stringify(payload)]
   );
 
   return toStore;
@@ -46,11 +46,11 @@ export async function updateNote(
   );
   if (!existing) return false;
 
-  const { planet, date, type, ...payload } = update;
+  const { planet, date, schema, ...payload } = update;
 
   await run(
-    'UPDATE notes SET planet = ?, date = ?, type = ?, payload = ? WHERE id = ?',
-    [planet, date, type, JSON.stringify(payload), id]
+    'UPDATE notes SET planet = ?, date = ?, schema = ?, payload = ? WHERE id = ?',
+    [planet, date, schema, JSON.stringify(payload), id]
   );
   return true;
 }

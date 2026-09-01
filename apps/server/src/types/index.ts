@@ -2,7 +2,7 @@ export type Note = {
   id: string;
   planet: string;
   date: string;
-  type: string;
+  schema: string;
   // additional dynamic fields
   [key: string]: unknown;
 };

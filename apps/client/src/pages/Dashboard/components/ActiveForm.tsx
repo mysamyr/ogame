@@ -41,19 +41,19 @@ export default function ActiveForm() {
     };
 
     activeSchema?.fields.forEach(field => {
-      const val = activeNote?.[field.name];
+      const val = activeNote?.[field.id];
       if (field.type === FieldKind.BOOLEAN) {
-        defaults[field.name] = typeof val === 'boolean' ? val : false;
+        defaults[field.id] = typeof val === 'boolean' ? val : false;
       } else if (field.type === FieldKind.NUMBER) {
-        defaults[field.name] = typeof val === 'number' ? val : '';
+        defaults[field.id] = typeof val === 'number' ? val : '';
       } else if (field.type === FieldKind.TIME) {
-        defaults[field.name] =
+        defaults[field.id] =
           typeof val === 'string' ? val : field.required ? nowTime() : '';
       } else if (field.type === FieldKind.DATE) {
-        defaults[field.name] =
+        defaults[field.id] =
           typeof val === 'string' ? val : field.required ? todayDate() : '';
       } else {
-        defaults[field.name] = typeof val === 'string' ? val : '';
+        defaults[field.id] = typeof val === 'string' ? val : '';
       }
     });
 
@@ -78,14 +78,17 @@ export default function ActiveForm() {
   const onSubmit = async (data: FormValues) => {
     if (!selectedType) return;
 
-    const payload: NoteRecord = { ...(data as NoteRecord), type: selectedType };
+    const payload: NoteRecord = {
+      ...(data as NoteRecord),
+      schema: selectedType,
+    };
 
     // Remove optional fields that are empty/falsy
     activeSchema?.fields.forEach(field => {
       if (!field.required) {
-        const val = payload[field.name];
-        if (val === '' || val === false || val === 0 || val === undefined) {
-          delete payload[field.name];
+        const val = payload[field.id];
+        if (val === '' || val === undefined) {
+          delete payload[field.id];
         }
       }
     });
@@ -107,7 +110,7 @@ export default function ActiveForm() {
 
   return (
     <>
-      {selectedType ? (
+      {activeSchema ? (
         <>
           <h2>{activeNote ? 'Edit Note' : 'Create Note'}</h2>
 
@@ -123,7 +126,7 @@ export default function ActiveForm() {
                   name: 'planet',
                   type: FieldKind.STRING,
                   required: true,
-                  id: 0,
+                  id: 'planet',
                 }}
                 placeholder="1:123:12"
                 rules={{
@@ -139,7 +142,7 @@ export default function ActiveForm() {
                   name: 'date',
                   type: FieldKind.DATE,
                   required: true,
-                  id: 0,
+                  id: 'date',
                 }}
               />
 

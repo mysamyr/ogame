@@ -5,7 +5,7 @@ import {
 } from '../constants/index.js';
 
 export type SchemaField = {
-  id: number;
+  id: string;
   name: string;
   type: FieldKind;
   required: boolean;
@@ -34,7 +34,7 @@ export interface NoteRecord extends Record<string, unknown> {
   id?: string;
   planet: string;
   date: string;
-  type: string;
+  schema: string;
 }
 
 export type FilterColumn = {

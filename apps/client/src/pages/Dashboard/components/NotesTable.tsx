@@ -84,8 +84,8 @@ export default function NotesTable({
     const fields: SchemaField[] = schema?.fields ?? [];
 
     const dynamicColumns = fields.map(field =>
-      columnHelper.accessor(row => row[field.name], {
-        id: field.name,
+      columnHelper.accessor(row => row[field.id], {
+        id: field.id,
         header: toCapital(field.name),
         cell: ({ getValue }) => {
           const value = getValue();

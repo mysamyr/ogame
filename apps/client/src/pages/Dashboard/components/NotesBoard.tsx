@@ -25,19 +25,20 @@ import NotesToolbar from './NotesToolbar.js';
 
 export default function NotesBoard() {
   const { notes, setActiveNote, addNote, removeNote } = useNotes();
-  const { schemas } = useSchemas();
+  const { schemas, getActiveSchema } = useSchemas();
   const { showModal, closeModal } = useModal();
   const { showSnackbar } = useSnackbar();
   const [searchParams] = useSearchParams();
   const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
 
   const selectedType = searchParams.get('type') ?? '';
+  const activeSchema = getActiveSchema(selectedType);
+
   const filterColumns = useMemo<FilterColumn[]>(() => {
-    const schema = schemas.find(item => item.id === selectedType);
     return [
       { id: 'planet', label: 'Planet', type: FieldKind.STRING },
       { id: 'date', label: 'Date', type: FieldKind.DATE },
-      ...(schema?.fields.map(field => ({
+      ...(activeSchema?.fields.map(field => ({
         id: field.name,
         label: toCapital(field.name),
         type: field.type,
@@ -102,7 +103,7 @@ export default function NotesBoard() {
 
   const displayedNotes = useMemo(() => {
     const filtered = selectedType
-      ? notes.filter(note => note.type === selectedType)
+      ? notes.filter(note => note.schema === selectedType)
       : notes;
 
     return [...(filtered ?? [])].sort((a, b) =>
@@ -112,7 +113,7 @@ export default function NotesBoard() {
 
   return (
     <>
-      {selectedType ? (
+      {activeSchema ? (
         <>
           <div className={styles.header}>
             <h2>Notes</h2>

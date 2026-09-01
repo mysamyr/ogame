@@ -1,7 +1,7 @@
 {
   "name": "ogame",
   "version": "0.1.0",
-  "description": "Ogame notes MVP server",
+  "description": "OGame notes server",
   "private": true,
   "type": "module",
   "packageManager": "npm@11.0.0",

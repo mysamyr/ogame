@@ -31,13 +31,13 @@ export default function FieldInput({ field, placeholder, rules }: Props) {
     return (
       <label className={styles.fieldRow}>
         <span className={styles.fieldLabel}>{toCapital(field.name)}</span>
-        <Checkbox className={styles.fieldCheckbox} {...register(field.name)} />
+        <Checkbox className={styles.fieldCheckbox} {...register(field.id)} />
       </label>
     );
   }
 
   const inputType = kindToInputType[field.type] ?? 'text';
-  const fieldError = errors[field.name];
+  const fieldError = errors[field.id];
   const errorMessage =
     typeof fieldError?.message === 'string' ? fieldError.message : null;
 
@@ -49,7 +49,7 @@ export default function FieldInput({ field, placeholder, rules }: Props) {
         className={styles.input}
         type={inputType}
         placeholder={placeholder}
-        {...register(field.name, {
+        {...register(field.id, {
           required: field.required,
           valueAsNumber: field.type === FieldKind.NUMBER || undefined,
           ...rules,

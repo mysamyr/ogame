@@ -14,7 +14,7 @@ import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
   const { schemas, setSchemas } = useSchemas();
-  const { setNotes, activeNote } = useNotes();
+  const { setNotes } = useNotes();
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
