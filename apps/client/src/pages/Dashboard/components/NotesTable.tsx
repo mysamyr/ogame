@@ -1,123 +1,229 @@
-import React from 'react';
+import { useMemo } from 'react';
 
+import {
+  createColumnHelper,
+  createCoreRowModel,
+  createFilteredRowModel,
+  createSortedRowModel,
+  columnFilteringFeature,
+  flexRender,
+  rowSortingFeature,
+  sortFn_alphanumeric,
+  sortFn_text,
+  tableFeatures,
+} from '@tanstack/react-table';
+import { useTable } from '@tanstack/react-table';
+
+import {
+  CopyIcon,
+  DeleteIcon,
+  EditIcon,
+} from '../../../components/icons/index.js';
+import { Checkbox } from '../../../components/index.js';
+import { FieldKind } from '../../../constants/index.js';
 import { useSchemas } from '../../../hooks/index.js';
-import type { NoteRecord } from '../../../types/index.js';
+import type {
+  FilterColumn,
+  FilterRule,
+  NoteRecord,
+  SchemaField,
+} from '../../../types/index.js';
+import { formatNumber } from '../../../utils/number.js';
+import { toCapital } from '../../../utils/string.js';
+
+import { matchesFilterRules } from '../../../utils/filtering.js';
+import styles from './NotesTable.module.css';
 
 type Props = {
-  dateKey: string;
-  notesForDate: NoteRecord[];
+  notes: NoteRecord[];
   selectedType: string;
+  filterColumns: FilterColumn[];
+  filterRules: FilterRule[];
   onCopy: (note: NoteRecord) => Promise<void>;
   onEdit: (note: NoteRecord) => void;
   onDelete: (id: string) => void | Promise<void>;
 };
 
+const features = tableFeatures({
+  coreRowModel: createCoreRowModel(),
+  columnFilteringFeature,
+  filteredRowModel: createFilteredRowModel(),
+  rowSortingFeature,
+  sortedRowModel: createSortedRowModel(),
+  sortFns: {
+    alphanumeric: sortFn_alphanumeric,
+    text: sortFn_text,
+  },
+});
+const columnHelper = createColumnHelper<typeof features, NoteRecord>();
+
+const SORT_INDICATOR: Record<string, string> = {
+  asc: ' ↑',
+  desc: ' ↓',
+};
+
 export default function NotesTable({
-  dateKey,
-  notesForDate,
+  notes,
   selectedType,
+  filterColumns,
+  filterRules,
   onCopy,
   onEdit,
   onDelete,
 }: Props) {
   const { schemas } = useSchemas();
 
-  const list = [...(notesForDate ?? [])].sort((a, b) => {
-    const ai = Number(a.planet);
-    const bi = Number(b.planet);
-    if (Number.isFinite(ai) && Number.isFinite(bi)) return bi - ai;
-    return String(b.planet).localeCompare(String(a.planet));
-  });
+  const schema = useMemo(
+    () => schemas.find(item => item.id === selectedType) ?? null,
+    [schemas, selectedType]
+  );
 
-  const schema = schemas.find(item => item.type === selectedType) || null;
-  const fieldList = schema ? schema.fields.map(f => f.name) : [];
-  const headerCells = ['Planet', ...fieldList, 'Actions'];
+  const data = useMemo(() => [...(notes ?? [])], [notes]);
+
+  const columns = useMemo(() => {
+    const fields: SchemaField[] = schema?.fields ?? [];
+
+    const dynamicColumns = fields.map(field =>
+      columnHelper.accessor(row => row[field.name], {
+        id: field.name,
+        header: toCapital(field.name),
+        cell: ({ getValue }) => {
+          const value = getValue();
+          if (field.type === FieldKind.BOOLEAN) {
+            return (
+              <span className={styles.cellBoolean}>
+                <Checkbox disabled checked={Boolean(value)} />
+              </span>
+            );
+          }
+          if (field.type === FieldKind.NUMBER) {
+            return value !== undefined ? formatNumber(Number(value)) : '';
+          }
+          const primitive =
+            typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean'
+              ? value
+              : null;
+          return primitive !== null ? String(primitive) : '';
+        },
+      })
+    );
+
+    return [
+      columnHelper.accessor(row => row.planet as unknown, {
+        id: 'planet',
+        header: 'Planet',
+        filterFn: row =>
+          matchesFilterRules(row.original, filterRules, filterColumns),
+        cell: info => info.getValue(),
+      }),
+      columnHelper.accessor(row => row.date as unknown, {
+        id: 'date',
+        header: 'Date',
+        cell: info => info.getValue(),
+      }),
+      ...dynamicColumns,
+      columnHelper.display({
+        id: 'actions',
+        header: 'Actions',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const note = row.original;
+          return (
+            <div className={styles.noteActions}>
+              <button
+                type="button"
+                className={styles.copy}
+                data-action="copy"
+                onClick={() => void onCopy(note)}
+                aria-label="Copy note"
+              >
+                <CopyIcon className={styles.actionIcon} />
+              </button>
+              <button
+                type="button"
+                data-action="edit"
+                onClick={() => onEdit(note)}
+                aria-label="Edit note"
+              >
+                <EditIcon className={styles.actionIcon} />
+              </button>
+              <button
+                type="button"
+                className={styles.del}
+                onClick={() => void onDelete(note.id!)}
+                aria-label="Delete note"
+              >
+                <DeleteIcon className={styles.actionIcon} />
+              </button>
+            </div>
+          );
+        },
+      }),
+    ];
+  }, [schema, onCopy, onEdit, onDelete, filterRules, filterColumns]);
+
+  const table = useTable(
+    {
+      features,
+      columns,
+      data,
+      state: {
+        columnFilters: filterRules.length
+          ? [{ id: 'planet', value: filterRules }]
+          : [],
+      },
+      initialState: { sorting: [{ id: 'date', desc: true }] },
+    },
+    state => state.sorting
+  );
 
   return (
-    <div key={dateKey} className="date-group">
-      <div className="group-title">{dateKey}</div>
-      <table className="notes-table">
-        <thead>
-          <tr>
-            {headerCells.map(header => (
-              <th
-                key={header}
-                className={header === 'Actions' ? 'note-actions' : ''}
-              >
-                {header}
-              </th>
+    <table className={styles.notesTable}>
+      <thead>
+        {table.getHeaderGroups().map(headerGroup => (
+          <tr key={headerGroup.id}>
+            {headerGroup.headers.map(header => {
+              const canSort = header.column.getCanSort();
+              const sorted = header.column.getIsSorted();
+              return (
+                <th
+                  key={header.id}
+                  className={header.id === 'actions' ? styles.noteActions : ''}
+                  style={
+                    canSort
+                      ? { cursor: 'pointer', userSelect: 'none' }
+                      : undefined
+                  }
+                  onClick={
+                    canSort
+                      ? header.column.getToggleSortingHandler()
+                      : undefined
+                  }
+                >
+                  {flexRender(
+                    header.column.columnDef.header,
+                    header.getContext()
+                  )}
+                  {sorted !== false ? SORT_INDICATOR[sorted] : ''}
+                </th>
+              );
+            })}
+          </tr>
+        ))}
+      </thead>
+      <tbody>
+        {table.getRowModel().rows.map(row => (
+          <tr key={row.id}>
+            {row.getAllCells().map(cell => (
+              <td key={cell.id}>
+                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              </td>
             ))}
           </tr>
-        </thead>
-        <tbody>
-          {list.map(note => {
-            const dynamicCells = fieldList.map(fieldName => {
-              const field = schema?.fields.find(
-                item => item.name === fieldName
-              );
-              const value = note[fieldName] as
-                string | number | boolean | undefined;
-              if (field?.kind === 'boolean') {
-                return (
-                  <td key={`${note.id}-${fieldName}`} className="cell-boolean">
-                    <input type="checkbox" disabled checked={Boolean(value)} />
-                  </td>
-                );
-              }
-
-              if (field?.kind === 'number') {
-                return (
-                  <td key={`${note.id}-${fieldName}`}>
-                    {value !== undefined
-                      ? String(
-                          new Intl.NumberFormat('en-US', {
-                            maximumFractionDigits: 0,
-                          }).format(Number(value))
-                        )
-                      : ''}
-                  </td>
-                );
-              }
-
-              return (
-                <td key={`${note.id}-${fieldName}`}>
-                  {value !== undefined ? String(value) : ''}
-                </td>
-              );
-            });
-
-            return (
-              <tr key={String(note.id)}>
-                <td>{String(note.planet)}</td>
-                {dynamicCells}
-                <td className="note-actions">
-                  <button
-                    type="button"
-                    data-action="copy"
-                    onClick={() => void onCopy(note)}
-                  >
-                    &#128203;
-                  </button>
-                  <button
-                    type="button"
-                    data-action="edit"
-                    onClick={() => onEdit(note)}
-                  >
-                    &#128393;
-                  </button>
-                  <button
-                    type="button"
-                    className="del"
-                    onClick={() => void onDelete(note.id!)}
-                  >
-                    &#128465;
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+        ))}
+      </tbody>
+    </table>
   );
 }

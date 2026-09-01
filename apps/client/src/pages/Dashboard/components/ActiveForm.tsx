@@ -1,81 +1,90 @@
-import { SubmitEvent } from 'react';
+import { useEffect } from 'react';
+
+import { FormProvider, useForm } from 'react-hook-form';
 
 import { useSearchParams } from 'react-router-dom';
 
 import { saveNote, updateNote } from '../../../api/notes.js';
+import { Button } from '../../../components/index.js';
+import {
+  ButtonVariant,
+  FieldKind,
+  PLANET_COORDINATES_REGEX,
+} from '../../../constants/index.js';
 import { useNotes, useSchemas } from '../../../hooks/index.js';
 import { NoteRecord } from '../../../types/index.js';
-import { todayDate } from '../../../utils/date.js';
+import { nowTime, todayDate } from '../../../utils/date.js';
+
+import styles from './ActiveForm.module.css';
 
 import FieldInput from './FieldInput.js';
 
+type FormValues = Record<string, string | number | boolean>;
+
 export default function ActiveForm() {
-  const { schemas, getActiveSchema } = useSchemas();
+  const { getActiveSchema } = useSchemas();
   const {
     activeNote,
     setActiveNote,
     updateNote: updateStateNote,
     addNote,
   } = useNotes();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
-  const selectedType = searchParams.get('type') ?? schemas[0]?.type ?? '';
-
+  const selectedType = searchParams.get('type')?.trim() ?? '';
   const activeSchema = getActiveSchema(selectedType);
 
-  const buildPayload = (form: HTMLFormElement): NoteRecord => {
-    const planetEl = form.elements.namedItem(
-      'planet'
-    ) as HTMLInputElement | null;
-    const dateEl = form.elements.namedItem('date') as HTMLInputElement | null;
-
-    const payload: Record<string, string | number | boolean> = {
-      planet: planetEl?.value ?? '',
-      date: dateEl?.value ?? '',
-      type: selectedType,
+  const getDefaultValues = (): FormValues => {
+    const defaults: FormValues = {
+      planet: activeNote?.planet ?? '',
+      date: activeNote?.date ?? todayDate(),
     };
 
     activeSchema?.fields.forEach(field => {
-      const el = form.elements.namedItem(field.name) as HTMLInputElement | null;
-      let value: string | number | boolean | undefined = el?.value;
-
-      if (field.kind === 'boolean') {
-        value =
-          el instanceof HTMLInputElement && el.type === 'checkbox'
-            ? el.checked
-            : Boolean(value);
-      }
-
-      if (
-        field.optional &&
-        (value === undefined || value === '' || value === false)
-      ) {
-        return;
-      }
-
-      if (field.kind === 'number') {
-        payload[field.name] = Number(value) || 0;
-      } else if (field.kind === 'boolean') {
-        payload[field.name] = Boolean(value);
+      const val = activeNote?.[field.name];
+      if (field.type === FieldKind.BOOLEAN) {
+        defaults[field.name] = typeof val === 'boolean' ? val : false;
+      } else if (field.type === FieldKind.NUMBER) {
+        defaults[field.name] = typeof val === 'number' ? val : 0;
+      } else if (field.type === FieldKind.TIME) {
+        defaults[field.name] = typeof val === 'string' ? val : nowTime();
       } else {
-        payload[field.name] = value === undefined ? '' : String(value);
+        defaults[field.name] = typeof val === 'string' ? val : '';
       }
     });
 
-    return payload as NoteRecord;
+    return defaults;
   };
 
+  const methods = useForm<FormValues>({
+    defaultValues: getDefaultValues(),
+    mode: 'onChange',
+  });
+  const { handleSubmit, reset } = methods;
+
+  useEffect(() => {
+    reset(getDefaultValues());
+  }, [activeNote, selectedType, activeSchema]);
+
   const resetForm = () => {
-    const form = document.querySelector('form');
-    if (form) {
-      form.reset();
-    }
+    reset(getDefaultValues());
     setActiveNote(null);
   };
 
-  const handleSubmit = async (event: SubmitEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const payload = buildPayload(event.target);
+  const onSubmit = async (data: FormValues) => {
+    if (!selectedType) return;
+
+    const payload: NoteRecord = { ...(data as NoteRecord), type: selectedType };
+
+    // Remove optional fields that are empty/falsy
+    activeSchema?.fields.forEach(field => {
+      if (!field.required) {
+        const val = payload[field.name];
+        if (val === '' || val === false || val === 0 || val === undefined) {
+          delete payload[field.name];
+        }
+      }
+    });
 
     try {
       if (activeNote) {
@@ -93,78 +102,47 @@ export default function ActiveForm() {
   };
 
   return (
-    <form
-      onSubmit={(event: SubmitEvent<HTMLFormElement>) =>
-        void handleSubmit(event)
-      }
-    >
-      <input type="hidden" value={activeNote?.id ?? ''} readOnly />
-      <label>
-        Planet
-        <input
-          name="planet"
-          placeholder="1:123:12"
-          defaultValue={activeNote?.planet ?? ''}
-          required
-        />
-      </label>
+    <FormProvider {...methods}>
+      <form onSubmit={event => void handleSubmit(onSubmit)(event)}>
+        <input type="hidden" value={activeNote?.id ?? ''} readOnly />
 
-      <label>
-        Type
-        <select
-          name="type"
-          value={selectedType}
-          onChange={event => {
-            setSearchParams({ type: event.target.value });
+        <FieldInput
+          field={{
+            name: 'planet',
+            type: FieldKind.STRING,
+            required: true,
+            id: 0,
           }}
-          required
-        >
-          {schemas.length === 0 ? (
-            <option value="">No types available</option>
-          ) : null}
-          {schemas.map(schema => (
-            <option key={schema.type} value={schema.type}>
-              {schema.type}
-            </option>
+          placeholder="1:123:12"
+          rules={{
+            pattern: {
+              value: PLANET_COORDINATES_REGEX,
+              message: 'Planet must be in format x:xxx:xx',
+            },
+          }}
+        />
+
+        <FieldInput
+          field={{ name: 'date', type: FieldKind.DATE, required: true, id: 0 }}
+        />
+
+        <div>
+          {activeSchema?.fields.map(field => (
+            <FieldInput key={field.name} field={field} />
           ))}
-        </select>
-      </label>
+        </div>
 
-      <label>
-        Date
-        <input name="date" type="date" defaultValue={todayDate()} required />
-      </label>
-
-      <div>
-        {activeSchema?.fields.map(field => {
-          const fieldValue = activeNote ? activeNote[field.name] : undefined;
-          const normalizedValue =
-            typeof fieldValue === 'string' ||
-            typeof fieldValue === 'number' ||
-            typeof fieldValue === 'boolean'
-              ? fieldValue
-              : undefined;
-
-          return (
-            <FieldInput
-              key={field.name}
-              field={field}
-              value={normalizedValue}
-            />
-          );
-        })}
-      </div>
-
-      <div className="buttons">
-        <button type="submit" id="save-btn">
-          {activeNote ? 'Update' : 'Save'}
-        </button>
-        {activeNote ? (
-          <button type="button" className="secondary" onClick={resetForm}>
-            Cancel
-          </button>
-        ) : null}
-      </div>
-    </form>
+        <div className={styles.buttons}>
+          <Button type="submit" id="save-btn">
+            {activeNote ? 'Update' : 'Save'}
+          </Button>
+          {activeNote ? (
+            <Button variant={ButtonVariant.SECONDARY} onClick={resetForm}>
+              Cancel
+            </Button>
+          ) : null}
+        </div>
+      </form>
+    </FormProvider>
   );
 }

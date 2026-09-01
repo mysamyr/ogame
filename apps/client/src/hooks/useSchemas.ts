@@ -7,6 +7,9 @@ export function useSchemas() {
     useShallow(s => ({
       schemas: s.schemas,
       setSchemas: s.setSchemas,
+      addSchema: s.addSchema,
+      updateSchema: s.updateSchema,
+      removeSchema: s.removeSchema,
       getActiveSchema: s.getActiveSchema,
     }))
   );

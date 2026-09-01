@@ -1,0 +1,28 @@
+.fieldRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fieldCheckbox {
+  margin-left: 0;
+  margin-right: 4px;
+}
+
+.fieldLabel {
+  flex: 1;
+}
+
+.errorText {
+  display: block;
+  margin-top: 4px;
+  color: #ff6b6b;
+  font-size: 12px;
+}
+
+:global(input[type='date']::-webkit-calendar-picker-indicator),
+:global(input[type='time']::-webkit-calendar-picker-indicator) {
+  filter: invert(1);
+  cursor: pointer;
+}

@@ -1,59 +1,67 @@
 import React from 'react';
 
-import { RequiredMarker } from '../../../components/index.js';
+import { RegisterOptions, useFormContext } from 'react-hook-form';
+
+import { Checkbox, RequiredMarker } from '../../../components/index.js';
+import { FieldKind } from '../../../constants/index.js';
 import type { SchemaField } from '../../../types/index.js';
-import { nowTime, todayDate } from '../../../utils/date.js';
+import { toCapital } from '../../../utils/string.js';
+
+import styles from './FieldInput.module.css';
 
 type Props = {
   field: SchemaField;
-  value?: string | number | boolean;
+  placeholder?: string;
+  rules?: RegisterOptions;
 };
 
-export default function FieldInput({ field, value }: Props) {
-  if (field.kind === 'boolean') {
+export default function FieldInput({ field, placeholder, rules }: Props) {
+  const {
+    register,
+    formState: { errors },
+  } = useFormContext();
+
+  const kindToInputType: Partial<Record<string, string>> = {
+    [FieldKind.NUMBER]: 'number',
+    [FieldKind.DATE]: 'date',
+    [FieldKind.TIME]: 'time',
+  };
+
+  if (field.type === FieldKind.BOOLEAN) {
     return (
-      <label key={field.name} className="field-row" data-field={field.name}>
-        <span className="field-label">{field.name}</span>
-        <input
-          className="field-checkbox"
-          name={field.name}
-          data-kind={field.kind}
-          type="checkbox"
-          defaultChecked={Boolean(value)}
+      <label className={styles.fieldRow} data-field={field.name}>
+        <span className={styles.fieldLabel}>{toCapital(field.name)}</span>
+        <Checkbox
+          className={styles.fieldCheckbox}
+          data-kind={field.type}
+          {...register(field.name)}
         />
       </label>
     );
   }
 
-  const kindToInputType = {
-    number: 'number',
-    date: 'date',
-    time: 'time',
-  } as const;
-  const inputType =
-    kindToInputType[field.kind as keyof typeof kindToInputType] || 'text';
-  const requiredAttr = field.optional ? undefined : true;
-
-  const defaultValue =
-    field.kind === 'date'
-      ? todayDate()
-      : field.kind === 'time'
-        ? nowTime()
-        : undefined;
+  const inputType = kindToInputType[field.type] ?? 'text';
+  const fieldError = errors[field.name];
+  const errorMessage =
+    typeof fieldError?.message === 'string' ? fieldError.message : null;
 
   return (
-    <label key={field.name}>
-      {field.name}
-      {field.optional ? '' : <RequiredMarker />}
+    <label>
+      {toCapital(field.name)}
+      {field.required ? <RequiredMarker /> : ''}
       <input
-        name={field.name}
-        data-kind={field.kind}
+        data-kind={field.type}
         type={inputType}
-        defaultValue={
-          value ? String(value) : field.optional ? undefined : defaultValue
-        }
-        required={requiredAttr}
+        placeholder={placeholder}
+        {...register(field.name, {
+          required: field.required,
+          valueAsNumber: field.type === FieldKind.NUMBER || undefined,
+          ...rules,
+        } as RegisterOptions)}
       />
+      {errorMessage ? (
+        <span className={styles.errorText}>{errorMessage}</span>
+      ) : null}
     </label>
   );
 }

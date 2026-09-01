@@ -1,0 +1,28 @@
+.row {
+  margin-bottom: 10px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.fieldsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.error {
+  margin: 8px 0 0;
+  color: var(--danger);
+}

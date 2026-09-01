@@ -2,13 +2,13 @@ import path from 'path';
 
 import express from 'express';
 
-import { ensureStoreExists } from './db.js';
 import {
   errorHandlerMiddleware,
   notFoundMiddleware,
-} from './middleware/error-handler.js';
-import { loggerMiddleware } from './middleware/logger.js';
+} from './middlewares/error-handler.js';
+import { loggerMiddleware } from './middlewares/logger.js';
 import { createNotesRouter, createSchemasRouter } from './router.js';
+import { ensureStoreExists } from './services/db.js';
 
 const app = express();
 app.use(loggerMiddleware);
@@ -27,7 +27,7 @@ const PORT = 3000;
 
 void ensureStoreExists()
   .catch(err => {
-    console.error('Failed to ensure store.json exists:', err);
+    console.error('Failed to ensure SQLite store exists:', err);
     process.exit(1);
   })
   .then(() => {

@@ -16,4 +16,4 @@ dist
 
 # Custom
 /assets
-/apps/server/store.json
+/apps/server/store.db

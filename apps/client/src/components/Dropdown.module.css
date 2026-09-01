@@ -1,0 +1,16 @@
+.dropdown {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: transparent;
+  color: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+}
+
+.dropdown:focus,
+.dropdown:active {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.04);
+}

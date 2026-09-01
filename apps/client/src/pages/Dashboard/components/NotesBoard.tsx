@@ -1,18 +1,53 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
 import { copyNote, deleteNote } from '../../../api/notes.js';
-import { useNotes, useSchemas, useSnackbar } from '../../../hooks/index.js';
-import type { NoteRecord } from '../../../types/index.js';
+import { ConfirmModal } from '../../../components/index.js';
+import { FieldKind } from '../../../constants/index.js';
+import {
+  useModal,
+  useNotes,
+  useSchemas,
+  useSnackbar,
+} from '../../../hooks/index.js';
+import type {
+  FilterColumn,
+  FilterRule,
+  NoteRecord,
+} from '../../../types/index.js';
+import { toCapital } from '../../../utils/index.js';
 
+import FilterBuilderModal from './modals/FilterBuilderModal.js';
+import styles from './NotesBoard.module.css';
 import NotesTable from './NotesTable.js';
+import NotesToolbar from './NotesToolbar.js';
 
 export default function NotesBoard() {
-  const { schemas } = useSchemas();
   const { notes, setActiveNote, addNote, removeNote } = useNotes();
+  const { schemas } = useSchemas();
+  const { showModal, closeModal } = useModal();
   const { showSnackbar } = useSnackbar();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
+  const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
+  const selectedType = searchParams.get('type') ?? '';
+
+  const filterColumns = useMemo<FilterColumn[]>(() => {
+    const schema = schemas.find(item => item.id === selectedType);
+    return [
+      { id: 'planet', label: 'Planet', type: FieldKind.STRING },
+      { id: 'date', label: 'Date', type: FieldKind.DATE },
+      ...(schema?.fields.map(field => ({
+        id: field.name,
+        label: toCapital(field.name),
+        type: field.type,
+      })) ?? []),
+    ];
+  }, [schemas, selectedType]);
+
+  useEffect(() => {
+    setFilterRules([]);
+  }, [selectedType]);
 
   const handleEdit = (note: NoteRecord) => {
     setActiveNote(note);
@@ -28,81 +63,72 @@ export default function NotesBoard() {
     }
   };
 
-  const handleDelete = async (noteIdValue: string) => {
-    if (!window.confirm(`Delete note?`)) {
-      return;
-    }
+  const handleDelete = (noteIdValue: string) => {
+    showModal({
+      component: ConfirmModal,
+      props: {
+        title: 'Delete note',
+        message: 'Delete note?',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        onCancel: closeModal,
+        onConfirm: () => {
+          void (async () => {
+            closeModal();
+            try {
+              await deleteNote(noteIdValue);
+              removeNote(noteIdValue);
+              showSnackbar('Deleted');
+            } catch {
+              showSnackbar('Delete failed');
+            }
+          })();
+        },
+      },
+    });
+  };
 
-    try {
-      await deleteNote(noteIdValue);
-      removeNote(noteIdValue);
-      showSnackbar('Deleted');
-    } catch {
-      showSnackbar('Delete failed');
-    }
+  const handleOpenFilters = () => {
+    showModal({
+      component: FilterBuilderModal,
+      props: {
+        columns: filterColumns,
+        initialRules: filterRules,
+        onApply: setFilterRules,
+        onCancel: closeModal,
+      },
+    });
   };
 
   const displayedNotes = useMemo(() => {
-    const filtered = searchParams.get('type')
-      ? notes.filter(note => note.type === searchParams.get('type'))
+    const filtered = selectedType
+      ? notes.filter(note => note.type === selectedType)
       : notes;
-    return (filtered ?? []).reduce<Record<string, NoteRecord[]>>(
-      (acc, note) => {
-        const key = String(note.date);
-        acc[key] = acc[key] || [];
-        acc[key].push(note);
-        return acc;
-      },
-      {}
+
+    return [...(filtered ?? [])].sort((a, b) =>
+      String(b.date).localeCompare(String(a.date))
     );
-  }, [searchParams, notes]);
+  }, [selectedType, notes]);
 
   return (
-    <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <h2>Notes</h2>
-        <select
-          value={searchParams.get('type') ?? ''}
-          onChange={event => {
-            setSearchParams({ type: event.target.value });
-          }}
-          style={{
-            width: '200px',
-            marginLeft: '8px',
-            padding: '6px',
-            borderRadius: '6px',
-            background: 'transparent',
-            color: 'inherit',
-            border: '1px solid rgba(255, 255, 255, 0.04)',
-          }}
-        >
-          {schemas.map(schema => (
-            <option key={schema.type} value={schema.type}>
-              {schema.type}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div id="notes-list">
-        {Object.keys(displayedNotes).length === 0 ? (
-          <div className="note-meta">No notes yet</div>
-        ) : (
-          Object.keys(displayedNotes)
-            .sort((a, b) => b.localeCompare(a))
-            .map(dateKey => (
-              <NotesTable
-                key={dateKey}
-                dateKey={dateKey}
-                notesForDate={displayedNotes[dateKey] ?? []}
-                selectedType={searchParams.get('type') ?? ''}
-                onCopy={handleCopy}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            ))
-        )}
-      </div>
-    </>
+    <div id="notes-list">
+      <NotesToolbar
+        activeFilterCount={filterRules.length}
+        onOpenFilters={handleOpenFilters}
+      />
+      {displayedNotes.length === 0 ? (
+        <div className={styles.noteMeta}>No notes yet</div>
+      ) : (
+        <NotesTable
+          notes={displayedNotes}
+          selectedType={selectedType}
+          filterColumns={filterColumns}
+          filterRules={filterRules}
+          onCopy={handleCopy}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      )}
+    </div>
   );
 }

@@ -1,0 +1,20 @@
+.container {
+  min-width: 320px;
+  display: grid;
+  gap: 12px;
+}
+
+.title {
+  margin: 0;
+}
+
+.message {
+  margin: 0;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

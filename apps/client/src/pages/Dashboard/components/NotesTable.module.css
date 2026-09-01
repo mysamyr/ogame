@@ -1,0 +1,68 @@
+.dateGroup {
+  margin-bottom: 18px;
+}
+
+.groupTitle {
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.notesTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.notesTable th,
+.notesTable td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+}
+
+.notesTable thead th {
+  color: var(--accent);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.04);
+}
+
+.cellBoolean {
+  width: 80px;
+}
+
+.cellBoolean input {
+  transform: scale(1);
+  margin: 0;
+  vertical-align: middle;
+}
+
+.noteActions {
+  white-space: nowrap;
+  text-align: right !important;
+}
+
+.noteActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  margin-left: 8px;
+  padding: 0;
+}
+
+.noteActions button.copy {
+  color: #d9b3ff;
+}
+
+.noteActions button.del {
+  color: var(--danger);
+}
+
+.actionIcon {
+  width: 16px;
+  height: 16px;
+}

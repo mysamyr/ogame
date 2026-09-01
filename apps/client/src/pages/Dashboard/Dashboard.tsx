@@ -7,7 +7,9 @@ import { fetchSchemas } from '../../api/schemas.js';
 import { useSchemas, useNotes } from '../../hooks/index.js';
 
 import ActiveForm from './components/ActiveForm.js';
+import Header from './components/Header.js';
 import NotesBoard from './components/NotesBoard.js';
+import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
   const { schemas, setSchemas } = useSchemas();
@@ -26,27 +28,49 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!schemas.length) return;
+    const selected = searchParams.get('type');
+    if (!schemas.length) {
+      if (selected) {
+        setSearchParams({});
+      }
+      return;
+    }
 
-    setSearchParams({
-      type: searchParams.get('type') ?? schemas[0]?.type ?? '',
-    });
+    const exists = selected
+      ? schemas.some(schema => schema.id === selected)
+      : false;
+    if (!selected || !exists) {
+      setSearchParams({
+        type: schemas[0]?.id ?? '',
+      });
+    }
   }, [schemas]);
 
   return (
     <>
-      <header>
-        <h1>OGame Notes — MVP</h1>
-      </header>
+      <Header />
 
-      <main>
-        <section className="card">
-          <h2>{activeNote ? 'Edit Note' : 'Create Note'}</h2>
-          <ActiveForm />
+      <main className={styles.main}>
+        <section className={styles.card}>
+          <h2 className={styles.header}>
+            {activeNote ? 'Edit Note' : 'Create Note'}
+          </h2>
+
+          {schemas.length ? (
+            <ActiveForm />
+          ) : (
+            <p className={styles.placeholder}>No schema available</p>
+          )}
         </section>
 
-        <section className="card">
-          <NotesBoard />
+        <section className={styles.card}>
+          <h2 className={styles.header}>Notes</h2>
+
+          {schemas.length ? (
+            <NotesBoard />
+          ) : (
+            <p className={styles.placeholder}>No schema available</p>
+          )}
         </section>
       </main>
     </>

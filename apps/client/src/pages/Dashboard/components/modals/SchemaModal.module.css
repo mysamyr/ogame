@@ -1,0 +1,26 @@
+.container {
+  min-width: 520px;
+  display: grid;
+  gap: 14px;
+}
+
+.title {
+  margin: 0;
+}
+
+.body {
+  display: grid;
+  gap: 10px;
+}
+
+.body :global(input),
+.body :global(select) {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.body :global(input:focus),
+.body :global(select:focus) {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.35);
+}

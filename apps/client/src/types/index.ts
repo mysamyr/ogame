@@ -1,13 +1,30 @@
+import { FieldKind } from '../constants/index.js';
+
 export type SchemaField = {
+  id: number;
   name: string;
-  kind: 'string' | 'number' | 'boolean' | 'date' | 'time';
-  optional?: boolean;
+  type: FieldKind;
+  required: boolean;
 };
 
 export type SchemaDescriptor = {
-  type: string;
+  id: string;
+  name: string;
   fields: SchemaField[];
 };
+
+export type SchemaFieldPayload = {
+  name: string;
+  type: FieldKind;
+  required: boolean;
+};
+
+export type SchemaCreatePayload = {
+  name: string;
+  fields: SchemaFieldPayload[];
+};
+
+export type SchemaUpdatePayload = SchemaCreatePayload;
 
 export interface NoteRecord extends Record<string, unknown> {
   id?: string;
@@ -15,3 +32,20 @@ export interface NoteRecord extends Record<string, unknown> {
   date: string;
   type: string;
 }
+
+export type FilterOperator = '=' | '!=' | '<' | '>';
+
+export type FilterLogicalOperator = 'AND' | 'OR';
+
+export type FilterColumn = {
+  id: string;
+  label: string;
+  type: FieldKind;
+};
+
+export type FilterRule = {
+  column: string;
+  operator: FilterOperator;
+  value: string;
+  logicalOperator: FilterLogicalOperator;
+};

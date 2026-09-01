@@ -94,14 +94,26 @@ export const useModalStore = create<ModalSlice>((set, get) => ({
 interface SchemasSlice {
   schemas: SchemaDescriptor[];
   setSchemas: (s: SchemaDescriptor[]) => void;
+  addSchema: (schema: SchemaDescriptor) => void;
+  updateSchema: (schemaId: string, schema: SchemaDescriptor) => void;
+  removeSchema: (schemaId: string) => void;
   getActiveSchema: (id: string) => SchemaDescriptor | null;
 }
 
 export const useSchemasStore = create<SchemasSlice>((set, getState) => ({
   schemas: [],
   setSchemas: s => set({ schemas: s }),
+  addSchema: schema => set(state => ({ schemas: [...state.schemas, schema] })),
+  updateSchema: (schemaId, schema) =>
+    set(state => ({
+      schemas: state.schemas.map(s => (s.id === schemaId ? schema : s)),
+    })),
+  removeSchema: schemaId =>
+    set(state => ({
+      schemas: state.schemas.filter(s => s.id !== schemaId),
+    })),
   getActiveSchema: (id: string) =>
-    getState().schemas.find(s => s.type === id) || null,
+    getState().schemas.find(s => s.id === id) || null,
 }));
 
 // ─── Notes ───────────────────────────────────────────────────────────────────
