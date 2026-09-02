@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, type ReactElement } from 'react';
 
-import type { ReactElement } from 'react';
+import {
+  SchemaImportPayload,
+  schemaImportPayload,
+} from '@ogame/shared/validation';
 
 import { Button } from '../../../../components/index.js';
 import { ButtonVariant } from '../../../../constants/index.js';
-import { schemaImportPayload } from '../../../../validation/index.js';
 
 import styles from './ImportSchemaModal.module.css';
 
 type Props = {
-  onImport: (payload: unknown) => void;
+  onImport: (payload: SchemaImportPayload) => void;
   onError: (message: string) => void;
   onCancel: () => void;
 };

@@ -1,13 +1,14 @@
 import { z } from 'zod';
 
-import { identifierMessage, noteIdentifierRegex } from '../constants/index.js';
+import { NOTE_IDENTIFIER_REGEX } from '../constants/index.js';
 
 const identifier = z
   .string()
   .trim()
   .min(1, 'Id is required')
-  .regex(noteIdentifierRegex, identifierMessage);
+  .regex(NOTE_IDENTIFIER_REGEX, 'Invalid identifier format');
 
+// TODO: string with number
 const paginationQueryParam = z.number().int().gt(0);
 
 export const getNotesQueryPayload = z.object({
@@ -23,3 +24,7 @@ export const notePayload = z.object({
   schema: z.string().describe('Schema id'),
   // other fields from selected schema
 });
+
+export type GetNotesQuery = z.infer<typeof getNotesQueryPayload>;
+export type NoteParams = z.infer<typeof noteParamsPayload>;
+export type NotePayload = z.infer<typeof notePayload>;

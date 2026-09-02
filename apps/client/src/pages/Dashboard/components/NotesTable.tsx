@@ -1,5 +1,9 @@
 import { useMemo } from 'react';
 
+import { FieldKind } from '@ogame/shared/constants';
+import { Note, SchemaField } from '@ogame/shared/types';
+import { toCapital } from '@ogame/shared/utils';
+
 import {
   createColumnHelper,
   createCoreRowModel,
@@ -20,27 +24,19 @@ import {
   EditIcon,
 } from '../../../components/icons/index.js';
 import { Checkbox } from '../../../components/index.js';
-import { FieldKind } from '../../../constants/index.js';
 import { useSchemas } from '../../../hooks/index.js';
-import type {
-  FilterColumn,
-  FilterRule,
-  NoteRecord,
-  SchemaField,
-} from '../../../types/index.js';
-import { matchesFilterRules } from '../../../utils/filtering.js';
-import { formatNumber } from '../../../utils/number.js';
-import { toCapital } from '../../../utils/string.js';
+import type { FilterColumn, FilterRule } from '../../../types/index.js';
+import { formatNumber, matchesFilterRules } from '../../../utils/index.js';
 
 import styles from './NotesTable.module.css';
 
 type Props = {
-  notes: NoteRecord[];
+  notes: Note[];
   selectedType: string;
   filterColumns: FilterColumn[];
   filterRules: FilterRule[];
-  onCopy: (note: NoteRecord) => Promise<void>;
-  onEdit: (note: NoteRecord) => void;
+  onCopy: (note: Note) => Promise<void>;
+  onEdit: (note: Note) => void;
   onDelete: (id: string) => void | Promise<void>;
 };
 
@@ -55,7 +51,7 @@ const features = tableFeatures({
     text: sortFn_text,
   },
 });
-const columnHelper = createColumnHelper<typeof features, NoteRecord>();
+const columnHelper = createColumnHelper<typeof features, Note>();
 
 const SORT_INDICATOR: Record<string, string> = {
   asc: ' ↑',
@@ -146,7 +142,7 @@ export default function NotesTable({
               <button
                 type="button"
                 className={styles.del}
-                onClick={() => void onDelete(note.id!)}
+                onClick={() => void onDelete(note.id)}
                 aria-label="Delete note"
               >
                 <DeleteIcon className={styles.actionIcon} />

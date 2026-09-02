@@ -6,6 +6,7 @@
   "type": "module",
   "packageManager": "npm@11.0.0",
   "workspaces": [
+    "packages/*",
     "apps/*"
   ],
   "engines": {
@@ -17,10 +18,12 @@
     "dev": "concurrently -n api,client -c cyan,magenta \"npm run dev:api\" \"npm run dev:client\"",
     "dev:api": "npm -w @ogame/server run dev",
     "dev:client": "npm -w @ogame/client run dev",
-    "build": "npm run build:api && npm run build:client",
+    "build": "npm run build:shared && npm run build:api && npm run build:client",
+    "build:shared": "npm -w @ogame/shared run build",
     "build:api": "npm -w @ogame/server run build",
     "build:client": "npm -w @ogame/client run build",
-    "typecheck": "npm run typecheck:api && npm run typecheck:client",
+    "typecheck": "npm run typecheck:shared && npm run typecheck:api && npm run typecheck:client",
+    "typecheck:shared": "npm -w @ogame/shared run typecheck",
     "typecheck:api": "npm -w @ogame/server run typecheck",
     "typecheck:client": "npm -w @ogame/client run typecheck",
     "lint": "eslint .",

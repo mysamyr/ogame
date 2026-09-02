@@ -1,51 +1,56 @@
+import { Schema } from '@ogame/shared/types';
 import {
-  SchemaCreatePayload,
-  SchemaDescriptor,
-  SchemaUpdatePayload,
-} from '../types/index.js';
+  SchemaImportPayload,
+  SchemaParams,
+  SchemaPayload,
+} from '@ogame/shared/validation';
 
 import api from './index.js';
 
-export async function fetchSchemas(): Promise<SchemaDescriptor[]> {
-  return await api.get<SchemaDescriptor[]>('/api/schema');
+export async function fetchSchemas(): Promise<Schema[]> {
+  return await api.get<Schema[]>('/api/schema');
 }
 
 export async function fetchSchemaById(
-  schemaId: string
-): Promise<SchemaDescriptor> {
-  return await api.get<SchemaDescriptor>(
+  schemaId: SchemaParams['id']
+): Promise<Schema> {
+  return await api.get<Schema>(
     `/api/schema/${encodeURIComponent(String(schemaId))}`
   );
 }
 
-export async function createSchema(
-  payload: SchemaCreatePayload
-): Promise<SchemaDescriptor> {
-  return await api.post<SchemaDescriptor>('/api/schema', payload);
+export async function createSchema(payload: SchemaPayload): Promise<Schema> {
+  return await api.post<Schema>('/api/schema', payload);
 }
 
 export async function updateSchema(
-  schemaId: string,
-  payload: SchemaUpdatePayload
-): Promise<SchemaDescriptor> {
-  return await api.put<SchemaDescriptor>(
+  schemaId: SchemaParams['id'],
+  payload: SchemaPayload
+): Promise<void> {
+  await api.put<Schema>(
     `/api/schema/${encodeURIComponent(String(schemaId))}`,
     payload
   );
 }
 
-export async function deleteSchema(schemaId: string): Promise<void> {
+export async function deleteSchema(
+  schemaId: SchemaParams['id']
+): Promise<void> {
   return await api.delete(
     `/api/schema/${encodeURIComponent(String(schemaId))}`
   );
 }
 
-export async function exportSchema(schemaId: string): Promise<unknown> {
-  return await api.get<unknown>(
+export async function exportSchema(
+  schemaId: SchemaParams['id']
+): Promise<Schema> {
+  return await api.get<Schema>(
     `/api/schema/${encodeURIComponent(String(schemaId))}/export`
   );
 }
 
-export async function importSchema(payload: unknown): Promise<unknown> {
-  return await api.post<unknown>('/api/schema/import', payload);
+export async function importSchema(
+  payload: SchemaImportPayload
+): Promise<void> {
+  await api.post<unknown>('/api/schema/import', payload);
 }

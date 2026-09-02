@@ -14,12 +14,7 @@ import styles from './Header.module.css';
 import SchemaModal from './modals/SchemaModal.js';
 
 export default function Header() {
-  const {
-    schemas,
-    addSchema,
-    updateSchema: updateSchemaInState,
-    removeSchema,
-  } = useSchemas();
+  const { schemas, addSchema, removeSchema } = useSchemas();
   const { showModal, closeModal } = useModal();
   const { showSnackbar } = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -75,9 +70,9 @@ export default function Header() {
             onSubmit: payload => {
               void (async () => {
                 try {
-                  const updated = await updateSchema(selectedSchemaId, payload);
-                  updateSchemaInState(selectedSchemaId, updated);
-                  applyTypeParam(updated.id);
+                  await updateSchema(selectedSchemaId, payload);
+                  // TODO: refresh schemas list from api
+                  applyTypeParam(selectedSchemaId);
                   closeModal();
                   showSnackbar('Schema updated');
                 } catch {

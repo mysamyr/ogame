@@ -1,3 +1,11 @@
+import {
+  notePayload,
+  noteParamsPayload,
+  getNotesQueryPayload,
+  type GetNotesQuery,
+  type NoteParams,
+  type NotePayload,
+} from '@ogame/shared/validation';
 import { Router } from 'express';
 
 import { promisify } from '../middlewares/promisify.js';
@@ -6,14 +14,15 @@ import {
   validateParams,
   validateQuery,
 } from '../middlewares/validation.js';
-import { addNote, deleteNote, getNotes, updateNote } from '../stores/note.js';
-import type { GetNotesQuery, Note } from '../types/index.js';
-import { BadRequestError } from '../utils/errors.js';
 import {
-  notePayload,
-  noteParamsPayload,
-  getNotesQueryPayload,
-} from '../validation/index.js';
+  addNote,
+  deleteNote,
+  getNoteById,
+  getNotes,
+  updateNote,
+} from '../stores/note.js';
+
+import { BadRequestError } from '../utils/errors.js';
 
 export default function createNoteRouter() {
   const router = Router();
@@ -45,7 +54,7 @@ export default function createNoteRouter() {
   router.post(
     '/',
     validateBody(notePayload),
-    promisify<unknown, Note>(async (req, res) => {
+    promisify<unknown, NotePayload>(async (req, res) => {
       const created = await addNote(req.body);
 
       res.status(201).json(created);
@@ -60,11 +69,12 @@ export default function createNoteRouter() {
     '/:id',
     validateParams(noteParamsPayload),
     validateBody(notePayload),
-    promisify<{ id: string }, Note>(async (req, res) => {
-      const updated = await updateNote(req.params.id, req.body);
-      if (!updated) {
-        throw new BadRequestError('update failed');
+    promisify<NoteParams, NotePayload>(async (req, res) => {
+      const existing = await getNoteById(req.params.id);
+      if (!existing) {
+        throw new BadRequestError('note not found');
       }
+      await updateNote(req.params.id, req.body);
 
       res.sendStatus(204);
     })
@@ -77,11 +87,12 @@ export default function createNoteRouter() {
   router.delete(
     '/:id',
     validateParams(noteParamsPayload),
-    promisify<{ id: string }>(async (req, res) => {
-      const deleted = await deleteNote(req.params.id);
-      if (!deleted) {
-        throw new BadRequestError('delete failed');
+    promisify<NoteParams>(async (req, res) => {
+      const existing = await getNoteById(req.params.id);
+      if (!existing) {
+        throw new BadRequestError('note not found');
       }
+      await deleteNote(req.params.id);
 
       res.sendStatus(204);
     })

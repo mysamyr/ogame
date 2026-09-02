@@ -1,10 +1,10 @@
+import { FieldKind } from '@ogame/shared/constants';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { DeleteIcon } from '../../../../components/icons/index.js';
 import { Button, Dropdown, Input } from '../../../../components/index.js';
 import {
   ButtonVariant,
-  FieldKind,
   FilterLogicalOperator,
   FilterOperator,
 } from '../../../../constants/index.js';

@@ -5,3 +5,4 @@
 - [ ] add default filtering field for schema
 - [ ] edit schema validation + schema fields update
 - [ ] create package with shared logic
+- [ ] pass also Req response type to promisify

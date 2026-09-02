@@ -1,3 +1,12 @@
+import { toSnake } from '@ogame/shared/utils';
+import {
+  schemaParamsPayload,
+  schemaPayload,
+  SchemaParams,
+  SchemaPayload,
+  SchemaImportPayload,
+  schemaImportPayload,
+} from '@ogame/shared/validation';
 import { Router } from 'express';
 
 import { promisify } from '../middlewares/promisify.js';
@@ -9,15 +18,8 @@ import {
   getAllSchemas,
   getSchemaById,
   upsertSchema,
-  updateSchema,
 } from '../stores/schema.js';
-import type { SchemaExportInput, SchemaInput } from '../types/index.js';
 import { BadRequestError } from '../utils/errors.js';
-import {
-  schemaParamsPayload,
-  schemaImportPayload,
-  schemaPayload,
-} from '../validation/index.js';
 
 export default function createSchemaRouter() {
   const router = Router();
@@ -42,7 +44,7 @@ export default function createSchemaRouter() {
   router.get(
     '/:id/export',
     validateParams(schemaParamsPayload),
-    promisify<{ id: string }>(async (req, res) => {
+    promisify<SchemaParams>(async (req, res) => {
       const schema = await getSchemaById(req.params.id);
       if (!schema) throw new BadRequestError('schema not found');
 
@@ -62,7 +64,7 @@ export default function createSchemaRouter() {
   router.get(
     '/:id',
     validateParams(schemaParamsPayload),
-    promisify<{ id: string }>(async (req, res) => {
+    promisify<SchemaParams>(async (req, res) => {
       const schema = await getSchemaById(req.params.id);
       if (!schema) throw new BadRequestError('schema not found');
 
@@ -77,8 +79,22 @@ export default function createSchemaRouter() {
   router.post(
     '/',
     validateBody(schemaPayload),
-    promisify<unknown, SchemaInput>(async (req, res) => {
-      const created = await createSchema(req.body);
+    promisify<unknown, SchemaPayload>(async (req, res) => {
+      const id = toSnake(req.body.name);
+
+      const schema = await getSchemaById(id);
+      if (schema) throw new Error('schema already exists');
+
+      const created = await createSchema({
+        id,
+        name: req.body.name,
+        fields: req.body.fields.map(f => ({
+          id: toSnake(f.name),
+          name: f.name,
+          type: f.type,
+          required: f.required,
+        })),
+      });
 
       res.status(201).json(created);
     })
@@ -91,7 +107,7 @@ export default function createSchemaRouter() {
   router.post(
     '/import',
     validateBody(schemaImportPayload),
-    promisify<unknown, SchemaExportInput>(async (req, res) => {
+    promisify<unknown, SchemaImportPayload>(async (req, res) => {
       const { id, name, fields, notes } = req.body;
 
       await upsertSchema({ id, name, fields });
@@ -102,10 +118,7 @@ export default function createSchemaRouter() {
       const schema = await getSchemaById(id);
       if (!schema) throw new Error('failed to import schema');
 
-      res.json({
-        ...schema,
-        notesImported: notes.length,
-      });
+      res.sendStatus(204);
     })
   );
 
@@ -117,11 +130,22 @@ export default function createSchemaRouter() {
     '/:id',
     validateParams(schemaParamsPayload),
     validateBody(schemaPayload),
-    promisify<{ id: string }, SchemaInput>(async (req, res) => {
-      const updated = await updateSchema(req.params.id, req.body);
-      if (!updated) throw new BadRequestError('schema not found');
+    promisify<SchemaParams, SchemaPayload>(async (req, res) => {
+      const schema = await getSchemaById(req.params.id);
+      if (!schema) throw new Error('schema not found');
 
-      res.json(updated);
+      await upsertSchema({
+        id: req.params.id,
+        name: req.body.name,
+        fields: req.body.fields.map(f => ({
+          id: toSnake(f.name),
+          name: f.name,
+          type: f.type,
+          required: f.required,
+        })),
+      });
+
+      res.sendStatus(204);
     })
   );
 
@@ -132,9 +156,11 @@ export default function createSchemaRouter() {
   router.delete(
     '/:id',
     validateParams(schemaParamsPayload),
-    promisify<{ id: string }>(async (req, res) => {
-      const ok = await deleteSchema(req.params.id);
-      if (!ok) throw new BadRequestError('schema not found');
+    promisify<SchemaParams>(async (req, res) => {
+      const schema = await getSchemaById(req.params.id);
+      if (!schema) throw new Error('schema not found');
+
+      await deleteSchema(req.params.id);
 
       res.sendStatus(204);
     })

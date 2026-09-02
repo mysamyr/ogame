@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 
+import type { Note } from '@ogame/shared/types';
+import { toCapital } from '@ogame/shared/utils';
+import type { SchemaImportPayload } from '@ogame/shared/validation';
 import { useSearchParams } from 'react-router-dom';
 
 import { copyNote, deleteNote, fetchNotes } from '../../../api/notes.js';
@@ -16,12 +19,7 @@ import {
   useSchemas,
   useSnackbar,
 } from '../../../hooks/index.js';
-import type {
-  FilterColumn,
-  FilterRule,
-  NoteRecord,
-} from '../../../types/index.js';
-import { toCapital } from '../../../utils/index.js';
+import type { FilterColumn, FilterRule } from '../../../types/index.js';
 
 import FilterBuilderModal from './modals/FilterBuilderModal.js';
 import ImportSchemaModal from './modals/ImportSchemaModal.js';
@@ -54,13 +52,15 @@ export default function NotesBoard() {
     setFilterRules([]);
   }, [selectedType]);
 
-  const handleEdit = (note: NoteRecord) => {
+  const handleEdit = (note: Note) => {
     setActiveNote(note);
   };
 
-  const handleCopy = async (note: NoteRecord) => {
+  const handleCopy = async (note: Note) => {
     try {
-      const newNote = await copyNote(note);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id, ...payload } = note;
+      const newNote = await copyNote(payload);
       showSnackbar('Copied');
       addNote(newNote);
     } catch {
@@ -114,7 +114,7 @@ export default function NotesBoard() {
           closeModal();
           showSnackbar(message);
         },
-        onImport: (payload: unknown) => {
+        onImport: (payload: SchemaImportPayload) => {
           void (async () => {
             try {
               await importSchema(payload);

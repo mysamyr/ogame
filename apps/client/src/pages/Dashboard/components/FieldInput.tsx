@@ -1,11 +1,11 @@
 import React from 'react';
 
+import { FieldKind } from '@ogame/shared/constants';
+import { SchemaField } from '@ogame/shared/types';
+import { toCapital } from '@ogame/shared/utils';
 import { RegisterOptions, useFormContext } from 'react-hook-form';
 
 import { Checkbox, Input, RequiredMarker } from '../../../components/index.js';
-import { FieldKind } from '../../../constants/index.js';
-import type { SchemaField } from '../../../types/index.js';
-import { toCapital } from '../../../utils/string.js';
 
 import styles from './FieldInput.module.css';
 

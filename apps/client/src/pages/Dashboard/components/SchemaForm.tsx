@@ -1,5 +1,8 @@
 import { useEffect } from 'react';
 
+import { FieldKind, NAME_REGEX } from '@ogame/shared/constants';
+import type { Schema, SchemaField } from '@ogame/shared/types';
+import type { SchemaPayload } from '@ogame/shared/validation';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { DeleteIcon } from '../../../components/icons/index.js';
@@ -12,22 +15,15 @@ import {
 } from '../../../components/index.js';
 import {
   ButtonVariant,
-  FieldKind,
   IDENTIFIER_NAME_HINT,
-  IDENTIFIER_NAME_REGEX,
 } from '../../../constants/index.js';
-import {
-  SchemaCreatePayload,
-  SchemaDescriptor,
-  SchemaFieldPayload,
-} from '../../../types/index.js';
 
 import styles from './SchemaForm.module.css';
 
 type Props = {
-  initialSchema?: SchemaDescriptor;
+  initialSchema?: Schema;
   submitText: string;
-  onSubmit: (payload: SchemaCreatePayload) => void;
+  onSubmit: (payload: SchemaPayload) => void;
   onCancel: () => void;
 };
 
@@ -36,7 +32,7 @@ const FIELD_KIND_OPTIONS = Object.values(FieldKind).map(kind => ({
   label: kind,
 }));
 
-const EMPTY_FIELD: SchemaFieldPayload = {
+const EMPTY_FIELD: Omit<SchemaField, 'id'> = {
   name: '',
   type: FieldKind.STRING,
   required: false,
@@ -48,7 +44,7 @@ export default function SchemaForm({
   onSubmit,
   onCancel,
 }: Props) {
-  const methods = useForm<SchemaCreatePayload>({
+  const methods = useForm<SchemaPayload>({
     mode: 'onChange',
     defaultValues: {
       name: initialSchema?.name ?? '',
@@ -87,7 +83,7 @@ export default function SchemaForm({
     });
   }, [initialSchema, reset]);
 
-  const submit = (values: SchemaCreatePayload) => {
+  const submit = (values: SchemaPayload) => {
     const normalizedName = values.name.trim();
     const normalizedFields = values.fields
       .map(field => ({
@@ -111,9 +107,7 @@ export default function SchemaForm({
             validate: value => {
               const trimmed = value.trim();
               if (!trimmed) return 'Schema name is required';
-              return IDENTIFIER_NAME_REGEX.test(trimmed)
-                ? true
-                : IDENTIFIER_NAME_HINT;
+              return NAME_REGEX.test(trimmed) ? true : IDENTIFIER_NAME_HINT;
             },
           })}
         />
@@ -134,9 +128,7 @@ export default function SchemaForm({
                 validate: value => {
                   const trimmed = value.trim();
                   if (!trimmed) return 'Field name is required';
-                  return IDENTIFIER_NAME_REGEX.test(trimmed)
-                    ? true
-                    : IDENTIFIER_NAME_HINT;
+                  return NAME_REGEX.test(trimmed) ? true : IDENTIFIER_NAME_HINT;
                 },
               })}
             />
@@ -145,17 +137,15 @@ export default function SchemaForm({
               value={fieldType}
               onChange={event => {
                 const nextType = event.target.value as FieldKind;
-                methods.setValue(
-                  `fields.${index}.type`,
-                  nextType,
-                  { shouldValidate: true, shouldDirty: true }
-                );
+                methods.setValue(`fields.${index}.type`, nextType, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                });
                 if (nextType === FieldKind.BOOLEAN) {
-                  methods.setValue(
-                    `fields.${index}.required`,
-                    false,
-                    { shouldValidate: true, shouldDirty: true }
-                  );
+                  methods.setValue(`fields.${index}.required`, false, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
                 }
               }}
             />

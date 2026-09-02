@@ -1,9 +1,8 @@
 import type { ReactElement } from 'react';
 
-import {
-  SchemaCreatePayload,
-  SchemaDescriptor,
-} from '../../../../types/index.js';
+import { Schema } from '@ogame/shared/types';
+import { SchemaPayload } from '@ogame/shared/validation';
+
 import SchemaForm from '../SchemaForm.js';
 
 import styles from './SchemaModal.module.css';
@@ -11,8 +10,8 @@ import styles from './SchemaModal.module.css';
 type Props = {
   title: string;
   submitText: string;
-  initialSchema?: SchemaDescriptor;
-  onSubmit: (payload: SchemaCreatePayload) => void;
+  initialSchema?: Schema;
+  onSubmit: (payload: SchemaPayload) => void;
   onCancel: () => void;
 };
 

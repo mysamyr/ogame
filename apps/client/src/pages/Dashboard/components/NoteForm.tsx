@@ -1,17 +1,15 @@
 import { useEffect } from 'react';
 
+import { FieldKind } from '@ogame/shared/constants';
+import { Note } from '@ogame/shared/types';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import { useSearchParams } from 'react-router-dom';
 
 import { saveNote, updateNote } from '../../../api/notes.js';
 import { Button } from '../../../components/index.js';
-import {
-  ButtonVariant,
-  FieldKind,
-} from '../../../constants/index.js';
+import { ButtonVariant } from '../../../constants/index.js';
 import { useNotes, useSchemas } from '../../../hooks/index.js';
-import { NoteRecord } from '../../../types/index.js';
 import { nowTime, todayDate } from '../../../utils/date.js';
 
 import FieldInput from './FieldInput.js';
@@ -73,8 +71,8 @@ export default function NoteForm() {
   const onSubmit = async (data: FormValues) => {
     if (!selectedType) return;
 
-    const payload: NoteRecord = {
-      ...(data as NoteRecord),
+    const payload: Note = {
+      ...(data as Note),
       schema: selectedType,
     };
 
@@ -90,8 +88,8 @@ export default function NoteForm() {
 
     try {
       if (activeNote) {
-        await updateNote(activeNote.id!, payload);
-        updateStateNote(activeNote.id!, payload);
+        await updateNote(activeNote.id, payload);
+        updateStateNote(activeNote.id, payload);
       } else {
         const newNote = await saveNote(payload);
         addNote(newNote);

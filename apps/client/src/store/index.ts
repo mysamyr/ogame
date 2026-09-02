@@ -1,8 +1,9 @@
 import { type ComponentType } from 'react';
 
-import { create } from 'zustand';
+import type { Note, Schema } from '@ogame/shared/types';
+import { SchemaParams, NoteParams } from '@ogame/shared/validation';
 
-import { NoteRecord, SchemaDescriptor } from '../types/index.js';
+import { create } from 'zustand';
 
 // ─── Snackbar ────────────────────────────────────────────────────────────────
 
@@ -92,12 +93,12 @@ export const useModalStore = create<ModalSlice>((set, get) => ({
 // ─── Schemas ─────────────────────────────────────────────────────────────────
 
 interface SchemasSlice {
-  schemas: SchemaDescriptor[];
-  setSchemas: (s: SchemaDescriptor[]) => void;
-  addSchema: (schema: SchemaDescriptor) => void;
-  updateSchema: (schemaId: string, schema: SchemaDescriptor) => void;
-  removeSchema: (schemaId: string) => void;
-  getActiveSchema: (id: string) => SchemaDescriptor | null;
+  schemas: Schema[];
+  setSchemas: (s: Schema[]) => void;
+  addSchema: (schema: Schema) => void;
+  updateSchema: (schemaId: SchemaParams['id'], schema: Schema) => void;
+  removeSchema: (schemaId: SchemaParams['id']) => void;
+  getActiveSchema: (id: string) => Schema | null;
 }
 
 export const useSchemasStore = create<SchemasSlice>((set, getState) => ({
@@ -119,13 +120,13 @@ export const useSchemasStore = create<SchemasSlice>((set, getState) => ({
 // ─── Notes ───────────────────────────────────────────────────────────────────
 
 interface NotesSlice {
-  notes: NoteRecord[];
-  setNotes: (n: NoteRecord[]) => void;
-  activeNote: NoteRecord | null;
-  setActiveNote: (n: NoteRecord | null) => void;
-  addNote: (note: NoteRecord) => void;
-  updateNote: (id: string, note: NoteRecord) => void;
-  removeNote: (id: string) => void;
+  notes: Note[];
+  setNotes: (n: Note[]) => void;
+  activeNote: Note | null;
+  setActiveNote: (n: Note | null) => void;
+  addNote: (note: Note) => void;
+  updateNote: (id: NoteParams['id'], note: Note) => void;
+  removeNote: (id: NoteParams['id']) => void;
 }
 
 export const useNotesStore = create<NotesSlice>(set => ({
@@ -136,7 +137,7 @@ export const useNotesStore = create<NotesSlice>(set => ({
   addNote: note => set(state => ({ notes: [...state.notes, note] })),
   updateNote: (id, note) =>
     set(state => ({
-      notes: state.notes.map(n => (n.id === id ? { id, ...note } : n)),
+      notes: state.notes.map(n => (n.id === id ? { ...note, id } : n)),
     })),
   removeNote: id =>
     set(state => ({ notes: state.notes.filter(n => n.id !== id) })),

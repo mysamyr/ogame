@@ -1,39 +1,9 @@
-import {
-  FieldKind,
+import type { FieldKind } from '@ogame/shared/constants';
+
+import type {
   FilterLogicalOperator,
   FilterOperator,
 } from '../constants/index.js';
-
-export type SchemaField = {
-  id: string;
-  name: string;
-  type: FieldKind;
-  required: boolean;
-};
-
-export type SchemaDescriptor = {
-  id: string;
-  name: string;
-  fields: SchemaField[];
-};
-
-export type SchemaFieldPayload = {
-  name: string;
-  type: FieldKind;
-  required: boolean;
-};
-
-export type SchemaCreatePayload = {
-  name: string;
-  fields: SchemaFieldPayload[];
-};
-
-export type SchemaUpdatePayload = SchemaCreatePayload;
-
-export interface NoteRecord extends Record<string, unknown> {
-  id?: string;
-  schema: string;
-}
 
 export type FilterColumn = {
   id: string;

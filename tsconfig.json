@@ -12,7 +12,14 @@
     "noUncheckedIndexedAccess": true,
     "declaration": true,
     "declarationMap": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "paths": {
+      "@ogame/shared/*": ["./packages/shared/*"]
+    }
   },
-  "references": [{ "path": "./apps/server" }, { "path": "./apps/client" }]
+  "references": [
+    { "path": "./apps/server" },
+    { "path": "./apps/client" },
+    { "path": "./packages/shared" }
+  ]
 }

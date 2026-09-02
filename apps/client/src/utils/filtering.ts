@@ -1,9 +1,8 @@
-import {
-  FieldKind,
-  FilterLogicalOperator,
-  FilterOperator,
-} from '../constants/index.js';
-import type { FilterColumn, FilterRule, NoteRecord } from '../types/index.js';
+import { FieldKind } from '@ogame/shared/constants';
+import { Note } from '@ogame/shared/types';
+
+import { FilterLogicalOperator, FilterOperator } from '../constants/index.js';
+import type { FilterColumn, FilterRule } from '../types/index.js';
 
 function compareValues(
   value: unknown,
@@ -53,7 +52,7 @@ function compareValues(
 }
 
 export function matchesFilterRules(
-  note: NoteRecord,
+  note: Note,
   rules: FilterRule[],
   columns: FilterColumn[]
 ): boolean {

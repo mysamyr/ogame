@@ -5,4 +5,5 @@ export function classNames(
 }
 
 export * from './date.js';
-export * from './string.js';
+export * from './number.js';
+export * from './filtering.js';
