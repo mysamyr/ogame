@@ -3,6 +3,18 @@ import { type ZodType } from 'zod';
 
 import { ValidationError } from '../utils/errors.js';
 
+export function validateQuery(schema: ZodType) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const parsed = schema.safeParse(req.query);
+    if (!parsed.success && parsed.error) {
+      next(new ValidationError(parsed.error.flatten()));
+      return;
+    }
+
+    next();
+  };
+}
+
 export function validateParams(schema: ZodType) {
   return (req: Request, _res: Response, next: NextFunction): void => {
     const parsed = schema.safeParse(req.params);

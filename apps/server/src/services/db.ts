@@ -39,8 +39,6 @@ export async function ensureStoreExists(): Promise<void> {
   await run(`
     CREATE TABLE IF NOT EXISTS notes (
       id TEXT PRIMARY KEY,
-      planet TEXT NOT NULL,
-      date TEXT NOT NULL,
       schema TEXT NOT NULL,
       payload TEXT NOT NULL
     )
@@ -53,11 +51,12 @@ export async function ensureStoreExists(): Promise<void> {
   `);
   await run(`
     CREATE TABLE IF NOT EXISTS schema_fields (
-      id TEXT PRIMARY KEY,
+      id TEXT NOT NULL,
       schema_id TEXT NOT NULL REFERENCES schemas(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       type TEXT NOT NULL,
-      required INTEGER NOT NULL DEFAULT 1
+      required INTEGER NOT NULL DEFAULT 1,
+      PRIMARY KEY (id, schema_id)
     )
   `);
 }

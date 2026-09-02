@@ -51,6 +51,7 @@ body {
   );
   color: var(--text);
   padding: 24px;
+  overflow: hidden;
   font-family:
     Inter,
     ui-sans-serif,
@@ -62,6 +63,10 @@ body {
     Arial;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  height: 100%;
 }
 
 h1 {

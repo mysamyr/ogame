@@ -1,7 +1,19 @@
+export type GetNotesQuery = {
+  limit?: number;
+  offset?: number;
+};
+
+export type NoteRecord = {
+  id: string;
+  schema: string;
+  /**
+   * JSON string representing the note's fields
+   */
+  payload: string;
+};
+
 export type Note = {
   id: string;
-  planet: string;
-  date: string;
   schema: string;
   // additional dynamic fields
   [key: string]: unknown;
@@ -28,4 +40,8 @@ export type SchemaInput = {
     type: string;
     required: boolean;
   }>;
+};
+
+export type SchemaExportInput = SchemaDescriptor & {
+  notes: Note[];
 };

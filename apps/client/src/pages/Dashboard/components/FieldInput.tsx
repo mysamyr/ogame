@@ -39,7 +39,11 @@ export default function FieldInput({ field, placeholder, rules }: Props) {
   const inputType = kindToInputType[field.type] ?? 'text';
   const fieldError = errors[field.id];
   const errorMessage =
-    typeof fieldError?.message === 'string' ? fieldError.message : null;
+    typeof fieldError?.message === 'string' && fieldError.message.length > 0
+      ? fieldError.message
+      : fieldError
+        ? `${toCapital(field.name)} is required`
+        : null;
 
   return (
     <label className={styles.label}>
@@ -50,7 +54,9 @@ export default function FieldInput({ field, placeholder, rules }: Props) {
         type={inputType}
         placeholder={placeholder}
         {...register(field.id, {
-          required: field.required,
+          required: field.required
+            ? `${toCapital(field.name)} is required`
+            : false,
           valueAsNumber: field.type === FieldKind.NUMBER || undefined,
           ...rules,
         } as RegisterOptions)}

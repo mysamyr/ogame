@@ -1,2 +1,2 @@
-export { default as createSchemasRouter } from './schema.router.js';
-export { default as createNotesRouter } from './notes.router.js';
+export { default as createSchemaRouter } from './schema.router.js';
+export { default as createNoteRouter } from './note.router.js';

@@ -1,4 +1,6 @@
 export { CopyIcon } from './CopyIcon.js';
-export { EditIcon } from './EditIcon.js';
 export { DeleteIcon } from './DeleteIcon.js';
+export { EditIcon } from './EditIcon.js';
+export { ExportIcon } from './ExportIcon.js';
 export { FilterIcon } from './FilterIcon.js';
+export { ImportIcon } from './ImportIcon.js';

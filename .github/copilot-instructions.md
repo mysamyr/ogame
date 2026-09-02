@@ -3,51 +3,44 @@
 ## Tech Stack & Structure
 
 - **Monorepo (NPM Workspaces)**: `@ogame/client` (Vite, React 19, React Router 7, Zustand 5, React Hook Form 7, TanStack
-  Table 9) & `@ogame/server` (Express 5, Node 24+, SQLite 3 via `sqlite3`, Zod 3).
+  Table 9) & `@ogame/server` (Express 5, Node 24+, SQLite 3 via `sqlite3`, Zod 4).
 - **Database**: SQLite3 (`store.db` at root) initialized inside `services/db.ts`.
-- **Styling**: **CSS Modules** (`*.module.css`) and `/apps/client/public/style.css`. Utility CSS frameworks (e.g., Tailwind) and inline CSS are strictly
-  prohibited.
+- **Styling**: **CSS Modules** (`*.module.css`) and `/apps/client/public/style.css`. Utility CSS frameworks (e.g.,
+  Tailwind) and inline CSS are strictly prohibited.
 - **Imports (ESM)**: Local imports **MUST** end in `.js` (e.g., `import x from './x.js'`) per
   `"moduleResolution": "NodeNext"`.
 
 ## API & Data Patterns
 
-- **Client Calls**: Managed in `api/index.ts` via custom `Api` fetch client. Throws `Error` with server `message` on
-  non-2xx responses.
-- **Server Handlers**: Router functions **MUST** wrap async callbacks in `promisify` middleware to route uncaught
-  rejections to the global error handler.
-- **Validation**: POST/PUT routes **MUST** validate bodies with Zod schemas. On fail, throw `ValidationError` to be
-  captured and serialized by `errorHandlerMiddleware`.
-- **Data Access**: SQL execution is prohibited in routers. Queries belong strictly in `stores/` using promisified SQLite
-  database wrappers `run()`, `list()`, or `get()`.
+- Managed in `api/index.ts` via custom `Api` fetch client. Throws `Error` with server `message` on non-2xx responses.
+- Router functions **MUST** wrap async callbacks in `promisify` middleware to route uncaught rejections to the global
+  error handler.
+- POST/PUT routes **MUST** validate bodies with Zod schemas. On fail, throw `ValidationError` to be captured and
+  serialized by `errorHandlerMiddleware`.
+- SQL execution is prohibited in routers. Queries belong strictly in `stores/` using promisified SQLite database
+  wrappers `run()`, `list()`, or `get()`.
 
 ## Code Conventions & Constraints
 
 ### Import Ordering (ESLint Enforced)
 
 Imports **MUST** be alphabetized (ascending, case-insensitive) and grouped in this exact order (with empty line breaks
-between groups):
-
-1. React / React DOM
-2. `builtin` Node modules
-3. `external` NPM packages
-4. `internal` workspace paths
-5. `parent` paths (`../`)
-6. `sibling` paths (`./`)
-7. `index` files (`./index.js`)
+between groups). Run `npm run lint:fix` to group and sort imports.
 
 ### Do's
 
-- **Do**: Wrap Zustand store queries with `useShallow` to prevent redundant component re-renders.
-- **Do**: Encapsulate raw Zustand stores inside domain-specific React hooks (e.g., `useNotes()`, `useSchemas()`).
-- **Do**: Prefix unused function arguments with an underscore (e.g., `(_req, res)`).
-- **Do**: Maintain isolated TypeScript typings (`apps/server/src/types/index.ts` and `apps/client/src/types/index.ts`).
+- Wrap Zustand store queries with `useShallow` to prevent redundant component re-renders.
+- Encapsulate raw Zustand stores inside domain-specific React hooks (e.g., `useNotes()`, `useSchemas()`).
+- Prefix unused function arguments with an underscore (e.g., `(_req, res)`).
+- Maintain isolated TypeScript typings (`apps/server/src/types/index.ts` and `apps/client/src/types/index.ts`).
+- Verify work with `npm run typecheck` and `npm run lint`.
 
 ### Don'ts
 
-- **Don't**: Import `sqlite3` directly outside of `services/db.ts`.
-- **Don't**: Use inline CSS styles or inject global class names.
-- **Don't**: Omit the `.js` extension on local TypeScript relative imports.
+- Import `sqlite3` directly outside of `services/db.ts`.
+- Use inline CSS styles or inject global class names.
+- Omit the `.js` extension on local TypeScript relative imports.
+- Try to run tests as they are absent.
 
 ## Self-Maintenance Rule
 

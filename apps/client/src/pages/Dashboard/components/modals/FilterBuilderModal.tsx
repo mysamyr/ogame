@@ -31,6 +31,11 @@ const OPERATOR_OPTIONS: { label: string; value: FilterOperator }[] = [
 ];
 
 const STRING_OPERATOR_OPTIONS: { label: string; value: FilterOperator }[] = [
+  { label: FilterOperator.CONTAINS, value: FilterOperator.CONTAINS },
+  {
+    label: FilterOperator.NOT_CONTAINS,
+    value: FilterOperator.NOT_CONTAINS,
+  },
   { label: FilterOperator.EQUALS, value: FilterOperator.EQUALS },
   { label: FilterOperator.NOT_EQUALS, value: FilterOperator.NOT_EQUALS },
 ];
@@ -46,10 +51,11 @@ const BOOLEAN_OPTIONS = [
 ];
 
 function createRule(columns: FilterColumn[]): FilterRule {
+  const firstCol = columns[0];
   return {
-    column: columns[0]?.id ?? '',
+    column: firstCol?.id ?? '',
     operator: FilterOperator.EQUALS,
-    value: '',
+    value: firstCol?.type === FieldKind.BOOLEAN ? 'true' : '',
     logicalOperator: FilterLogicalOperator.AND,
   };
 }
@@ -138,8 +144,14 @@ export default function FilterBuilderModal({
                           shouldDirty: true,
                         }
                       );
+                      setValue(`rules.${index}.value`, 'true', {
+                        shouldDirty: true,
+                      });
+                    } else {
+                      setValue(`rules.${index}.value`, '', {
+                        shouldDirty: true,
+                      });
                     }
-                    setValue(`rules.${index}.value`, '', { shouldDirty: true });
                   }}
                 />
                 {fieldType == FieldKind.BOOLEAN ? null : fieldType ==

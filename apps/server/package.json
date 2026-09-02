@@ -8,17 +8,16 @@
     "dev": "tsx watch --conditions development src/index.ts",
     "build": "tsc",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "seed:schemas": "tsx scripts/migrate-schemas.ts"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "express": "^5.2.1",
     "sqlite3": "^6.0.1",
-    "zod": "^3.23.2"
+    "zod": "^4.5.4"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
-    "@types/node": "^26.2.0",
-    "tsx": "^4.23.12"
+    "@types/node": "^26.4.1",
+    "tsx": "^4.23.13"
   }
 }

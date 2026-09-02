@@ -2,9 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
-import { copyNote, deleteNote } from '../../../api/notes.js';
+import { copyNote, deleteNote, fetchNotes } from '../../../api/notes.js';
+import {
+  exportSchema,
+  fetchSchemas,
+  importSchema,
+} from '../../../api/schemas.js';
 import { ConfirmModal } from '../../../components/index.js';
-import { FieldKind } from '../../../constants/index.js';
+import { ButtonVariant } from '../../../constants/index.js';
 import {
   useModal,
   useNotes,
@@ -19,13 +24,14 @@ import type {
 import { toCapital } from '../../../utils/index.js';
 
 import FilterBuilderModal from './modals/FilterBuilderModal.js';
+import ImportSchemaModal from './modals/ImportSchemaModal.js';
 import styles from './NotesBoard.module.css';
 import NotesTable from './NotesTable.js';
 import NotesToolbar from './NotesToolbar.js';
 
 export default function NotesBoard() {
-  const { notes, setActiveNote, addNote, removeNote } = useNotes();
-  const { schemas, getActiveSchema } = useSchemas();
+  const { notes, setNotes, setActiveNote, addNote, removeNote } = useNotes();
+  const { getActiveSchema, setSchemas } = useSchemas();
   const { showModal, closeModal } = useModal();
   const { showSnackbar } = useSnackbar();
   const [searchParams] = useSearchParams();
@@ -35,16 +41,14 @@ export default function NotesBoard() {
   const activeSchema = getActiveSchema(selectedType);
 
   const filterColumns = useMemo<FilterColumn[]>(() => {
-    return [
-      { id: 'planet', label: 'Planet', type: FieldKind.STRING },
-      { id: 'date', label: 'Date', type: FieldKind.DATE },
-      ...(activeSchema?.fields.map(field => ({
-        id: field.name,
+    return (
+      activeSchema?.fields.map(field => ({
+        id: field.id,
         label: toCapital(field.name),
         type: field.type,
-      })) ?? []),
-    ];
-  }, [schemas, selectedType]);
+      })) ?? []
+    );
+  }, [activeSchema]);
 
   useEffect(() => {
     setFilterRules([]);
@@ -71,7 +75,7 @@ export default function NotesBoard() {
         title: 'Delete note',
         message: 'Delete note?',
         confirmText: 'Delete',
-        cancelText: 'Cancel',
+        confirmVariant: ButtonVariant.DANGER,
         onCancel: closeModal,
         onConfirm: () => {
           void (async () => {
@@ -101,14 +105,84 @@ export default function NotesBoard() {
     });
   };
 
+  const handleOpenImport = () => {
+    showModal({
+      component: ImportSchemaModal,
+      props: {
+        onCancel: closeModal,
+        onError: (message: string) => {
+          closeModal();
+          showSnackbar(message);
+        },
+        onImport: (payload: unknown) => {
+          void (async () => {
+            try {
+              await importSchema(payload);
+              const [refreshedNotes, refreshedSchemas] = await Promise.all([
+                fetchNotes(),
+                fetchSchemas(),
+              ]);
+              setNotes(refreshedNotes);
+              setSchemas(refreshedSchemas);
+              closeModal();
+              showSnackbar('Schema imported');
+            } catch (error) {
+              closeModal();
+              showSnackbar(
+                error instanceof Error ? error.message : 'Import failed'
+              );
+            }
+          })();
+        },
+      },
+    });
+  };
+
+  const handleOpenExport = () => {
+    showModal({
+      component: ConfirmModal,
+      props: {
+        title: 'Export schema',
+        message: "Do you want to export schema with all it's notes?",
+        confirmText: 'Export',
+        onCancel: closeModal,
+        onConfirm: () => {
+          void (async () => {
+            closeModal();
+            if (!activeSchema) {
+              return;
+            }
+
+            try {
+              const data = await exportSchema(activeSchema.id);
+              const blob = new Blob([JSON.stringify(data, null, 2)], {
+                type: 'application/json',
+              });
+              const url = URL.createObjectURL(blob);
+              const anchor = document.createElement('a');
+
+              anchor.href = url;
+              anchor.download = `${activeSchema.id}-export.json`;
+              document.body.append(anchor);
+              anchor.click();
+              anchor.remove();
+              URL.revokeObjectURL(url);
+              showSnackbar('Exported');
+            } catch {
+              showSnackbar('Export failed');
+            }
+          })();
+        },
+      },
+    });
+  };
+
   const displayedNotes = useMemo(() => {
     const filtered = selectedType
       ? notes.filter(note => note.schema === selectedType)
       : notes;
 
-    return [...(filtered ?? [])].sort((a, b) =>
-      String(b.date).localeCompare(String(a.date))
-    );
+    return filtered ?? [];
   }, [selectedType, notes]);
 
   return (
@@ -119,6 +193,8 @@ export default function NotesBoard() {
             <h2>Notes</h2>
             <NotesToolbar
               activeFilterCount={filterRules.length}
+              onExport={handleOpenExport}
+              onImport={handleOpenImport}
               onOpenFilters={handleOpenFilters}
             />
           </div>

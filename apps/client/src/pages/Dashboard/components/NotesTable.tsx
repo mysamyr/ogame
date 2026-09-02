@@ -11,8 +11,8 @@ import {
   sortFn_alphanumeric,
   sortFn_text,
   tableFeatures,
+  useTable,
 } from '@tanstack/react-table';
-import { useTable } from '@tanstack/react-table';
 
 import {
   CopyIcon,
@@ -78,7 +78,13 @@ export default function NotesTable({
     [schemas, selectedType]
   );
 
-  const data = useMemo(() => [...(notes ?? [])], [notes]);
+  const data = useMemo(
+    () =>
+      (notes ?? []).filter(note =>
+        matchesFilterRules(note, filterRules, filterColumns)
+      ),
+    [notes, filterRules, filterColumns]
+  );
 
   const columns = useMemo(() => {
     const fields: SchemaField[] = schema?.fields ?? [];
@@ -111,18 +117,6 @@ export default function NotesTable({
     );
 
     return [
-      columnHelper.accessor(row => row.planet as unknown, {
-        id: 'planet',
-        header: 'Planet',
-        filterFn: row =>
-          matchesFilterRules(row.original, filterRules, filterColumns),
-        cell: info => info.getValue(),
-      }),
-      columnHelper.accessor(row => row.date as unknown, {
-        id: 'date',
-        header: 'Date',
-        cell: info => info.getValue(),
-      }),
       ...dynamicColumns,
       columnHelper.display({
         id: 'actions',
@@ -162,68 +156,66 @@ export default function NotesTable({
         },
       }),
     ];
-  }, [schema, onCopy, onEdit, onDelete, filterRules, filterColumns]);
+  }, [schema, onCopy, onEdit, onDelete]);
 
   const table = useTable(
     {
       features,
       columns,
       data,
-      state: {
-        columnFilters: filterRules.length
-          ? [{ id: 'planet', value: filterRules }]
-          : [],
-      },
-      initialState: { sorting: [{ id: 'date', desc: true }] },
     },
     state => state.sorting
   );
 
   return (
-    <table className={styles.notesTable}>
-      <thead>
-        {table.getHeaderGroups().map(headerGroup => (
-          <tr key={headerGroup.id}>
-            {headerGroup.headers.map(header => {
-              const canSort = header.column.getCanSort();
-              const sorted = header.column.getIsSorted();
-              return (
-                <th
-                  key={header.id}
-                  className={header.id === 'actions' ? styles.noteActions : ''}
-                  style={
-                    canSort
-                      ? { cursor: 'pointer', userSelect: 'none' }
-                      : undefined
-                  }
-                  onClick={
-                    canSort
-                      ? header.column.getToggleSortingHandler()
-                      : undefined
-                  }
-                >
-                  {flexRender(
-                    header.column.columnDef.header,
-                    header.getContext()
-                  )}
-                  {sorted !== false ? SORT_INDICATOR[sorted] : ''}
-                </th>
-              );
-            })}
-          </tr>
-        ))}
-      </thead>
-      <tbody>
-        {table.getRowModel().rows.map(row => (
-          <tr key={row.id}>
-            {row.getAllCells().map(cell => (
-              <td key={cell.id}>
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className={styles.tableContainer}>
+      <table className={styles.notesTable}>
+        <thead>
+          {table.getHeaderGroups().map(headerGroup => (
+            <tr key={headerGroup.id}>
+              {headerGroup.headers.map(header => {
+                const canSort = header.column.getCanSort();
+                const sorted = header.column.getIsSorted();
+                return (
+                  <th
+                    key={header.id}
+                    className={
+                      header.id === 'actions' ? styles.noteActions : ''
+                    }
+                    style={
+                      canSort
+                        ? { cursor: 'pointer', userSelect: 'none' }
+                        : undefined
+                    }
+                    onClick={
+                      canSort
+                        ? header.column.getToggleSortingHandler()
+                        : undefined
+                    }
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                    {sorted !== false ? SORT_INDICATOR[sorted] : ''}
+                  </th>
+                );
+              })}
+            </tr>
+          ))}
+        </thead>
+        <tbody>
+          {table.getRowModel().rows.map(row => (
+            <tr key={row.id}>
+              {row.getAllCells().map(cell => (
+                <td key={cell.id}>
+                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

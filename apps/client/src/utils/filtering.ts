@@ -12,11 +12,12 @@ function compareValues(
   operator: FilterRule['operator']
 ): boolean {
   if (type === FieldKind.BOOLEAN) {
-    const matches = value === (filterValue === 'true');
+    const matches = Boolean(value) === (filterValue === 'true');
     return operator === FilterOperator.NOT_EQUALS ? !matches : matches;
   }
 
   if (type === FieldKind.NUMBER) {
+    if (value === undefined || value === null || value === '') return false;
     const rowValue = Number(value);
     const expectedValue = Number(filterValue);
     if (Number.isNaN(rowValue) || Number.isNaN(expectedValue)) return false;
@@ -31,8 +32,12 @@ function compareValues(
   const rowValue =
     typeof value === 'string' || typeof value === 'number' ? String(value) : '';
   if (type === FieldKind.STRING) {
-    const normalizedRowValue = rowValue.toLocaleLowerCase();
-    const normalizedFilterValue = filterValue.toLocaleLowerCase();
+    const normalizedRowValue = rowValue.toLowerCase();
+    const normalizedFilterValue = filterValue.toLowerCase();
+    if (operator === FilterOperator.CONTAINS)
+      return normalizedRowValue.includes(normalizedFilterValue);
+    if (operator === FilterOperator.NOT_CONTAINS)
+      return !normalizedRowValue.includes(normalizedFilterValue);
     if (operator === FilterOperator.EQUALS)
       return normalizedRowValue === normalizedFilterValue;
     if (operator === FilterOperator.NOT_EQUALS)
@@ -41,6 +46,7 @@ function compareValues(
 
   if (operator === FilterOperator.EQUALS) return rowValue === filterValue;
   if (operator === FilterOperator.NOT_EQUALS) return rowValue !== filterValue;
+  if (!rowValue) return false;
   return operator === FilterOperator.LESS_THAN
     ? rowValue < filterValue
     : rowValue > filterValue;

@@ -1,0 +1,20 @@
+.container {
+  min-width: 420px;
+  display: grid;
+  gap: 14px;
+}
+
+.title {
+  margin-left: 10px;
+}
+
+.body {
+  display: grid;
+  gap: 10px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

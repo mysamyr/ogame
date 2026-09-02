@@ -1,49 +1,45 @@
 import { Router } from 'express';
 
 import { promisify } from '../middlewares/promisify.js';
-import { validateBody, validateParams } from '../middlewares/validation.js';
 import {
-  addNote,
-  deleteNote,
-  getAllNotes,
-  updateNote,
-} from '../stores/note.js';
-import type { Note } from '../types/index.js';
+  validateBody,
+  validateParams,
+  validateQuery,
+} from '../middlewares/validation.js';
+import { addNote, deleteNote, getNotes, updateNote } from '../stores/note.js';
+import type { GetNotesQuery, Note } from '../types/index.js';
 import { BadRequestError } from '../utils/errors.js';
-import { notePayload, paramsPayload } from '../validation/index.js';
+import {
+  notePayload,
+  noteParamsPayload,
+  getNotesQueryPayload,
+} from '../validation/index.js';
 
-export default function createNotesRouter() {
+export default function createNoteRouter() {
   const router = Router();
 
   /**
-   * GET /api/notes
-   * Optional query: date, planet
+   * GET /api/note
+   * Optional query: limit, offset
    * Return list of all notes
    */
   router.get(
     '/',
-    promisify<
-      unknown,
-      unknown,
-      {
-        date?: string;
-        planet?: string;
-      }
-    >(async (req, res) => {
-      const notes = await getAllNotes();
-      const { date, planet } = req.query;
-      const filtered = notes.filter(n => {
-        if (date && String(n.date) !== date) return false;
-        if (planet && String(n.planet) !== planet) return false;
-        return true;
+    validateQuery(getNotesQueryPayload),
+    promisify<unknown, unknown, GetNotesQuery>(async (req, res) => {
+      const limit = req.query.limit ? Number(req.query.limit) : undefined;
+      const offset = req.query.offset ? Number(req.query.offset) : undefined;
+      const notes = await getNotes(undefined, {
+        ...(limit && { limit }),
+        ...(offset && { offset }),
       });
 
-      res.json(filtered);
+      res.json(notes);
     })
   );
 
   /**
-   * POST /api/notes
+   * POST /api/note
    * Validate payload according to its type-specific schema.
    */
   router.post(
@@ -57,12 +53,12 @@ export default function createNotesRouter() {
   );
 
   /**
-   * PUT /api/notes/:id
+   * PUT /api/note/:id
    * Replace existing note; validate payload against target type.
    */
   router.put(
     '/:id',
-    validateParams(paramsPayload),
+    validateParams(noteParamsPayload),
     validateBody(notePayload),
     promisify<{ id: string }, Note>(async (req, res) => {
       const updated = await updateNote(req.params.id, req.body);
@@ -75,12 +71,12 @@ export default function createNotesRouter() {
   );
 
   /**
-   * DELETE /api/notes/:id
+   * DELETE /api/note/:id
    * Delete an existing note by ID.
    */
   router.delete(
     '/:id',
-    validateParams(paramsPayload),
+    validateParams(noteParamsPayload),
     promisify<{ id: string }>(async (req, res) => {
       const deleted = await deleteNote(req.params.id);
       if (!deleted) {

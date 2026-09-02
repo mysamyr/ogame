@@ -7,7 +7,7 @@ import {
   notFoundMiddleware,
 } from './middlewares/error-handler.js';
 import { loggerMiddleware } from './middlewares/logger.js';
-import { createNotesRouter, createSchemasRouter } from './routers/index.js';
+import { createNoteRouter, createSchemaRouter } from './routers/index.js';
 import { ensureStoreExists } from './services/db.js';
 
 const app = express();
@@ -15,8 +15,8 @@ app.use(loggerMiddleware);
 
 app.use(express.json());
 
-app.use('/api/schemas', createSchemasRouter());
-app.use('/api/notes', createNotesRouter());
+app.use('/api/schema', createSchemaRouter());
+app.use('/api/note', createNoteRouter());
 
 app.use(
   express.static(path.join(import.meta.dirname, '..', '..', 'client', 'dist'))

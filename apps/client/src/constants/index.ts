@@ -17,6 +17,8 @@ export enum FieldKind {
 export enum FilterOperator {
   EQUALS = '=',
   NOT_EQUALS = '!=',
+  CONTAINS = 'contains',
+  NOT_CONTAINS = 'not_contains',
   LESS_THAN = '<',
   GREATER_THAN = '>',
 }
@@ -26,8 +28,12 @@ export enum FilterLogicalOperator {
   OR = 'OR',
 }
 
-export const PLANET_COORDINATES_REGEX = /^\d:\d{1,3}:(?:[1-9]|1[0-6])$/;
-
 export const IDENTIFIER_NAME_REGEX = /^[A-Za-z0-9_ ]+$/;
 export const IDENTIFIER_NAME_HINT =
   'Only letters, numbers, spaces, and underscores';
+
+export const SCHEMA_IDENTIFIER_REGEX = /^[a-z0-9_ ]+$/;
+export const NOTE_IDENTIFIER_REGEX = /^\d{13}-(?:\d|[1-9]\d{1,3})$/;
+export const IDENTIFIER_MESSAGE = 'Invalid identifier format';
+export const IDENTIFIER_NAME_MESSAGE =
+  'Only letters, numbers, spaces, and underscores are allowed';

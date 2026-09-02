@@ -32,8 +32,6 @@ export type SchemaUpdatePayload = SchemaCreatePayload;
 
 export interface NoteRecord extends Record<string, unknown> {
   id?: string;
-  planet: string;
-  date: string;
   schema: string;
 }
 

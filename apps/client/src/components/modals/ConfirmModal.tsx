@@ -10,6 +10,7 @@ type ConfirmModalProps = {
   message: string;
   confirmText?: string;
   cancelText?: string;
+  confirmVariant?: ButtonVariant;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -19,6 +20,7 @@ export default function ConfirmModal({
   message,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
+  confirmVariant = ButtonVariant.PRIMARY,
   onConfirm,
   onCancel,
 }: ConfirmModalProps): ReactElement {
@@ -30,7 +32,7 @@ export default function ConfirmModal({
         <Button variant={ButtonVariant.SECONDARY} onClick={onCancel}>
           {cancelText}
         </Button>
-        <Button variant={ButtonVariant.DANGER} onClick={onConfirm}>
+        <Button variant={confirmVariant} onClick={onConfirm}>
           {confirmText}
         </Button>
       </div>

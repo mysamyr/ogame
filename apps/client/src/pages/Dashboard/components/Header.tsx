@@ -49,7 +49,8 @@ export default function Header() {
               applyTypeParam(created.id);
               closeModal();
               showSnackbar('Schema created');
-            } catch {
+            } catch (error) {
+              console.error(error);
               showSnackbar('Create failed');
             }
           })();
@@ -102,7 +103,7 @@ export default function Header() {
         message:
           'Delete selected schema? If this schema has notes, all related notes will be deleted.',
         confirmText: 'Delete',
-        cancelText: 'Cancel',
+        confirmVariant: ButtonVariant.DANGER,
         onCancel: closeModal,
         onConfirm: () => {
           void (async () => {

@@ -7,26 +7,21 @@ import {
 import api from './index.js';
 
 export async function fetchSchemas(): Promise<SchemaDescriptor[]> {
-  try {
-    return await api.get<SchemaDescriptor[]>('/api/schemas');
-  } catch (error) {
-    console.error('Failed to fetch schemas:', error);
-    return [];
-  }
+  return await api.get<SchemaDescriptor[]>('/api/schema');
 }
 
 export async function fetchSchemaById(
   schemaId: string
 ): Promise<SchemaDescriptor> {
   return await api.get<SchemaDescriptor>(
-    `/api/schemas/${encodeURIComponent(String(schemaId))}`
+    `/api/schema/${encodeURIComponent(String(schemaId))}`
   );
 }
 
 export async function createSchema(
   payload: SchemaCreatePayload
 ): Promise<SchemaDescriptor> {
-  return await api.post<SchemaDescriptor>('/api/schemas', payload);
+  return await api.post<SchemaDescriptor>('/api/schema', payload);
 }
 
 export async function updateSchema(
@@ -34,13 +29,23 @@ export async function updateSchema(
   payload: SchemaUpdatePayload
 ): Promise<SchemaDescriptor> {
   return await api.put<SchemaDescriptor>(
-    `/api/schemas/${encodeURIComponent(String(schemaId))}`,
+    `/api/schema/${encodeURIComponent(String(schemaId))}`,
     payload
   );
 }
 
 export async function deleteSchema(schemaId: string): Promise<void> {
   return await api.delete(
-    `/api/schemas/${encodeURIComponent(String(schemaId))}`
+    `/api/schema/${encodeURIComponent(String(schemaId))}`
   );
+}
+
+export async function exportSchema(schemaId: string): Promise<unknown> {
+  return await api.get<unknown>(
+    `/api/schema/${encodeURIComponent(String(schemaId))}/export`
+  );
+}
+
+export async function importSchema(payload: unknown): Promise<unknown> {
+  return await api.post<unknown>('/api/schema/import', payload);
 }

@@ -8,10 +8,24 @@
   margin-bottom: 8px;
 }
 
+.tableContainer {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  margin-top: 8px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tableContainer::-webkit-scrollbar {
+  display: none;
+}
+
 .notesTable {
   width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 .notesTable th,
@@ -23,6 +37,10 @@
 }
 
 .notesTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
   color: var(--accent);
   border-bottom: 2px solid var(--table-border);
 }

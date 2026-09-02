@@ -9,19 +9,17 @@ import { Button } from '../../../components/index.js';
 import {
   ButtonVariant,
   FieldKind,
-  PLANET_COORDINATES_REGEX,
 } from '../../../constants/index.js';
 import { useNotes, useSchemas } from '../../../hooks/index.js';
 import { NoteRecord } from '../../../types/index.js';
 import { nowTime, todayDate } from '../../../utils/date.js';
 
-import styles from './ActiveForm.module.css';
-
 import FieldInput from './FieldInput.js';
+import styles from './NoteForm.module.css';
 
 type FormValues = Record<string, string | number | boolean>;
 
-export default function ActiveForm() {
+export default function NoteForm() {
   const { getActiveSchema } = useSchemas();
   const {
     activeNote,
@@ -35,10 +33,7 @@ export default function ActiveForm() {
   const activeSchema = getActiveSchema(selectedType);
 
   const getDefaultValues = (): FormValues => {
-    const defaults: FormValues = {
-      planet: activeNote?.planet ?? '',
-      date: activeNote?.date ?? todayDate(),
-    };
+    const defaults: FormValues = {};
 
     activeSchema?.fields.forEach(field => {
       const val = activeNote?.[field.id];
@@ -119,36 +114,11 @@ export default function ActiveForm() {
               className={styles.form}
               onSubmit={event => void handleSubmit(onSubmit)(event)}
             >
-              <input type="hidden" value={activeNote?.id ?? ''} readOnly />
-
-              <FieldInput
-                field={{
-                  name: 'planet',
-                  type: FieldKind.STRING,
-                  required: true,
-                  id: 'planet',
-                }}
-                placeholder="1:123:12"
-                rules={{
-                  pattern: {
-                    value: PLANET_COORDINATES_REGEX,
-                    message: 'Planet must be in format x:xxx:xx',
-                  },
-                }}
-              />
-
-              <FieldInput
-                field={{
-                  name: 'date',
-                  type: FieldKind.DATE,
-                  required: true,
-                  id: 'date',
-                }}
-              />
-
-              {activeSchema?.fields.map(field => (
-                <FieldInput key={field.name} field={field} />
-              ))}
+              <div className={styles.fields}>
+                {activeSchema?.fields.map(field => (
+                  <FieldInput key={field.name} field={field} />
+                ))}
+              </div>
 
               <div className={styles.buttons}>
                 <Button type="submit" id="save-btn">

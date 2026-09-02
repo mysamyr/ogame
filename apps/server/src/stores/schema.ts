@@ -1,26 +1,6 @@
 import { get, list, run } from '../services/db.js';
 import type { SchemaDescriptor, SchemaInput } from '../types/index.js';
-import { uuid } from '../utils/uuid.js';
-
-export async function upsertSchema(descriptor: SchemaInput): Promise<void> {
-  const existing = await get<{ id: string }>(
-    'SELECT id FROM schemas WHERE name = ?',
-    [descriptor.name]
-  );
-  const id = existing?.id ?? uuid();
-
-  await run(
-    'INSERT INTO schemas (id, name) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name',
-    [id, descriptor.name]
-  );
-  await run('DELETE FROM schema_fields WHERE schema_id = ?', [id]);
-  for (const field of descriptor.fields) {
-    await run(
-      'INSERT INTO schema_fields (id, schema_id, name, type, required) VALUES (?, ?, ?, ?, ?)',
-      [uuid(), id, field.name, field.type, field.required ? 1 : 0]
-    );
-  }
-}
+import { toSnake } from '../utils/string.js';
 
 export async function getAllSchemas(): Promise<SchemaDescriptor[]> {
   const schemas = await list<{ id: string; name: string }>(
@@ -75,7 +55,7 @@ export async function getSchemaById(
 export async function createSchema(
   descriptor: SchemaInput
 ): Promise<SchemaDescriptor> {
-  const id = uuid();
+  const id = toSnake(descriptor.name);
   await run('INSERT INTO schemas (id, name) VALUES (?, ?)', [
     id,
     descriptor.name,
@@ -83,7 +63,8 @@ export async function createSchema(
   for (const field of descriptor.fields) {
     await run(
       'INSERT INTO schema_fields (id, schema_id, name, type, required) VALUES (?, ?, ?, ?, ?)',
-      [uuid(), id, field.name, field.type, field.required ? 1 : 0]
+
+      [toSnake(field.name), id, field.name, field.type, field.required ? 1 : 0]
     );
   }
   const created = await getSchemaById(id);
@@ -106,13 +87,36 @@ export async function updateSchema(
   for (const field of descriptor.fields) {
     await run(
       'INSERT INTO schema_fields (id, schema_id, name, type, required) VALUES (?, ?, ?, ?, ?)',
-      [uuid(), id, field.name, field.type, field.required ? 1 : 0]
+
+      [toSnake(field.name), id, field.name, field.type, field.required ? 1 : 0]
     );
   }
 
   const updated = await getSchemaById(id);
   if (!updated) throw new Error('failed to update schema');
   return updated;
+}
+
+export async function upsertSchema(
+  descriptor: SchemaDescriptor
+): Promise<void> {
+  await run(
+    'INSERT INTO schemas (id, name) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name',
+    [descriptor.id, descriptor.name]
+  );
+  await run('DELETE FROM schema_fields WHERE schema_id = ?', [descriptor.id]);
+  for (const field of descriptor.fields) {
+    await run(
+      'INSERT INTO schema_fields (id, schema_id, name, type, required) VALUES (?, ?, ?, ?, ?)',
+      [
+        toSnake(field.name),
+        descriptor.id,
+        field.name,
+        field.type,
+        field.required ? 1 : 0,
+      ]
+    );
+  }
 }
 
 export async function deleteSchema(id: string): Promise<boolean> {
