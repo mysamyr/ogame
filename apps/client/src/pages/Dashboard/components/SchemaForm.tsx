@@ -168,6 +168,7 @@ export default function SchemaForm({
             )}
             <Button
               variant={ButtonVariant.ICON}
+              className={styles.removeButton}
               onClick={() => remove(index)}
               disabled={fields.length === 1}
               aria-label="Remove field"

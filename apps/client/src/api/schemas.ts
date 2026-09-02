@@ -26,8 +26,8 @@ export async function createSchema(payload: SchemaPayload): Promise<Schema> {
 export async function updateSchema(
   schemaId: SchemaParams['id'],
   payload: SchemaPayload
-): Promise<void> {
-  await api.put<Schema>(
+): Promise<Schema> {
+  return await api.put<Schema>(
     `/api/schema/${encodeURIComponent(String(schemaId))}`,
     payload
   );
@@ -36,9 +36,7 @@ export async function updateSchema(
 export async function deleteSchema(
   schemaId: SchemaParams['id']
 ): Promise<void> {
-  return await api.delete(
-    `/api/schema/${encodeURIComponent(String(schemaId))}`
-  );
+  await api.delete(`/api/schema/${encodeURIComponent(String(schemaId))}`);
 }
 
 export async function exportSchema(

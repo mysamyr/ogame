@@ -18,7 +18,7 @@ export async function copyNote(note: NotePayload): Promise<Note> {
 export async function updateNote(
   noteId: NoteParams['id'],
   note: NotePayload
-): Promise<void> {
+): Promise<Note> {
   return await api.put(`/api/note/${encodeURIComponent(String(noteId))}`, note);
 }
 

@@ -2,7 +2,6 @@ import type { Note } from '@ogame/shared/types';
 import type { GetNotesQuery, NotePayload } from '@ogame/shared/validation';
 
 import { get, list, run } from '../services/db.js';
-import { uuid } from '../utils/uuid.js';
 
 type NoteRecord = {
   id: string;
@@ -61,18 +60,13 @@ export async function getNoteById(id: string): Promise<Note | null> {
   };
 }
 
-export async function addNote(note: NotePayload): Promise<Note> {
-  const id = uuid();
-  const { schema, ...payload } = note;
-  const toStore = { ...(note as Omit<Note, 'id'>), id } as Note;
-
+export async function addNote(note: Note): Promise<void> {
+  const { id, schema, ...payload } = note;
   await run('INSERT INTO notes (id, schema, payload) VALUES (?, ?, ?)', [
     id,
     schema,
     JSON.stringify(payload),
   ]);
-
-  return toStore;
 }
 
 export async function updateNote(

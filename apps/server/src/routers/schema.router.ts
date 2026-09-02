@@ -85,7 +85,7 @@ export default function createSchemaRouter() {
       const schema = await getSchemaById(id);
       if (schema) throw new Error('schema already exists');
 
-      const created = await createSchema({
+      const payload = {
         id,
         name: req.body.name,
         fields: req.body.fields.map(f => ({
@@ -94,9 +94,11 @@ export default function createSchemaRouter() {
           type: f.type,
           required: f.required,
         })),
-      });
+      };
 
-      res.status(201).json(created);
+      await createSchema(payload);
+
+      res.status(201).json(payload);
     })
   );
 
@@ -134,7 +136,7 @@ export default function createSchemaRouter() {
       const schema = await getSchemaById(req.params.id);
       if (!schema) throw new Error('schema not found');
 
-      await upsertSchema({
+      const payload = {
         id: req.params.id,
         name: req.body.name,
         fields: req.body.fields.map(f => ({
@@ -143,9 +145,11 @@ export default function createSchemaRouter() {
           type: f.type,
           required: f.required,
         })),
-      });
+      };
 
-      res.sendStatus(204);
+      await upsertSchema(payload);
+
+      res.json(payload);
     })
   );
 

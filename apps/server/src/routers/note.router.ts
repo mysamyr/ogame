@@ -23,6 +23,7 @@ import {
 } from '../stores/note.js';
 
 import { BadRequestError } from '../utils/errors.js';
+import { uuid } from '../utils/uuid.js';
 
 export default function createNoteRouter() {
   const router = Router();
@@ -55,9 +56,12 @@ export default function createNoteRouter() {
     '/',
     validateBody(notePayload),
     promisify<unknown, NotePayload>(async (req, res) => {
-      const created = await addNote(req.body);
+      const id = uuid();
+      const note = { ...req.body, id };
 
-      res.status(201).json(created);
+      await addNote(note);
+
+      res.status(201).json(note);
     })
   );
 
@@ -76,7 +80,10 @@ export default function createNoteRouter() {
       }
       await updateNote(req.params.id, req.body);
 
-      res.sendStatus(204);
+      res.json({
+        id: req.params.id,
+        ...req.body,
+      });
     })
   );
 

@@ -9,7 +9,7 @@ import { useSearchParams } from 'react-router-dom';
 import { saveNote, updateNote } from '../../../api/notes.js';
 import { Button } from '../../../components/index.js';
 import { ButtonVariant } from '../../../constants/index.js';
-import { useNotes, useSchemas } from '../../../hooks/index.js';
+import { useNotes, useSchemas, useSnackbar } from '../../../hooks/index.js';
 import { nowTime, todayDate } from '../../../utils/date.js';
 
 import FieldInput from './FieldInput.js';
@@ -19,6 +19,7 @@ type FormValues = Record<string, string | number | boolean>;
 
 export default function NoteForm() {
   const { getActiveSchema } = useSchemas();
+  const { showSnackbar } = useSnackbar();
   const {
     activeNote,
     setActiveNote,
@@ -90,14 +91,17 @@ export default function NoteForm() {
       if (activeNote) {
         await updateNote(activeNote.id, payload);
         updateStateNote(activeNote.id, payload);
+        showSnackbar('Note updated successfully');
       } else {
         const newNote = await saveNote(payload);
         addNote(newNote);
+        showSnackbar('Note created successfully');
       }
       resetForm();
     } catch (error) {
       const err = error instanceof Error ? { message: error.message } : {};
       console.log(`Update failed: ${err.message}`);
+      showSnackbar(`Update failed: ${err.message}`);
     }
   };
 

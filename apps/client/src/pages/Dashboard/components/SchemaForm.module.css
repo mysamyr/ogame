@@ -19,7 +19,7 @@
 
 .fieldRow {
   display: grid;
-  grid-template-columns: 1fr 1fr 90px auto;
+  grid-template-columns: 1fr 150px 90px auto;
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
@@ -37,6 +37,15 @@
 .error {
   margin: 8px 0 0;
   color: var(--danger);
+}
+
+.removeButton {
+  color: var(--danger);
+}
+.removeButton:hover,
+.removeButton:focus-visible {
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .actions,
