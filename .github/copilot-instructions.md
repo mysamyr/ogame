@@ -12,11 +12,12 @@
 
 ## API & Data Patterns
 
-- Managed in `api/index.ts` via custom `Api` fetch client. Throws `Error` with server `message` on non-2xx responses.
+- Managed in `api/index.ts` via custom `Api` fetch client. Serializes non-2xx responses via `hydrateApiError`, throwing strongly-typed `AppError` subclasses (e.g., `NotFoundError`, `ValidationError`).
+- Standardized error handling contracts live in `@ogame/shared/errors` (`ErrorCode`, `ApiErrorPayload`, `AppError`, domain subclasses, `isApiError`, and `hydrateApiError`).
 - Router functions **MUST** wrap async callbacks in `promisify` middleware to route uncaught rejections to the global
   error handler.
 - POST/PUT routes **MUST** validate bodies with Zod schemas. On fail, throw `ValidationError` to be captured and
-  serialized by `errorHandlerMiddleware`.
+  serialized into standard `ApiErrorPayload` by `errorHandlerMiddleware`.
 - SQL execution is prohibited in routers. Queries belong strictly in `stores/` using promisified SQLite database
   wrappers `run()`, `list()`, or `get()`.
 
@@ -41,6 +42,7 @@ between groups). Run `npm run lint:fix` to group and sort imports.
 - Use inline CSS styles or inject global class names.
 - Omit the `.js` extension on local TypeScript relative imports.
 - Try to run tests as they are absent.
+- Use git.
 
 ## Self-Maintenance Rule
 

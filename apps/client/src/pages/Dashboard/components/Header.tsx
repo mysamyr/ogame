@@ -81,7 +81,7 @@ export default function Header() {
                   closeModal();
                   showSnackbar('Schema updated');
                 } catch {
-                  showSnackbar('Update failed');
+                  showSnackbar('Schema update failed');
                 }
               })();
             },

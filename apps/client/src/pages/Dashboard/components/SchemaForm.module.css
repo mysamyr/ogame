@@ -17,12 +17,15 @@
   margin-bottom: 8px;
 }
 
+.fieldGroup {
+  margin-bottom: 8px;
+}
+
 .fieldRow {
   display: grid;
-  grid-template-columns: 1fr 140px 85px 36px 36px;
+  grid-template-columns: 1fr 140px 85px 36px 64px 36px;
   gap: 8px;
   align-items: center;
-  margin-bottom: 8px;
 }
 
 .checkboxLabel {
@@ -77,6 +80,81 @@
 .removeButton:focus-visible {
   color: var(--danger);
   border-color: var(--danger);
+}
+
+.validationButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: auto;
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.6;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.validationButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.validationButton:hover,
+.validationButton:focus-visible {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.validationButtonActive {
+  color: var(--accent);
+  border-color: var(--accent);
+  background-color: var(--white-8);
+  opacity: 1;
+}
+
+.validationButtonActive:hover,
+.validationButtonActive:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.validationAccordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.validationAccordion.validationAccordionOpen {
+  grid-template-rows: 1fr;
+  margin-top: 6px;
+}
+
+.validationInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.validationRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px;
+  background-color: var(--white-8);
+  border-radius: 6px;
+}
+
+.validationField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .actions,

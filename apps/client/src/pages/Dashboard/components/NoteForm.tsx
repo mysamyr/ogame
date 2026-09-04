@@ -2,8 +2,8 @@ import { useEffect } from 'react';
 
 import { FieldKind } from '@ogame/shared/constants';
 import { Note } from '@ogame/shared/types';
+import { validateNoteBySchema } from '@ogame/shared/validation/index.js';
 import { FormProvider, useForm } from 'react-hook-form';
-
 import { useSearchParams } from 'react-router-dom';
 
 import { saveNote, updateNote } from '../../../api/notes.js';
@@ -58,7 +58,7 @@ export default function NoteForm() {
     defaultValues: getDefaultValues(),
     mode: 'onChange',
   });
-  const { handleSubmit, reset } = methods;
+  const { clearErrors, handleSubmit, reset, setError, setFocus } = methods;
 
   useEffect(() => {
     reset(getDefaultValues());
@@ -70,11 +70,11 @@ export default function NoteForm() {
   };
 
   const onSubmit = async (data: FormValues) => {
-    if (!selectedType) return;
+    if (!activeSchema) return;
 
     const payload: Note = {
       ...(data as Note),
-      schema: selectedType,
+      schema: activeSchema.id,
     };
 
     // Remove optional fields that are empty/falsy
@@ -86,6 +86,39 @@ export default function NoteForm() {
         }
       }
     });
+
+    const { error, success } = validateNoteBySchema(
+      payload,
+      activeSchema.fields
+    );
+    if (!success) {
+      clearErrors();
+
+      error.issues.forEach(issue => {
+        const fieldName = issue.path[0];
+        if (typeof fieldName === 'string') {
+          setError(fieldName, {
+            type: 'manual',
+            message: issue.message,
+          });
+        }
+      });
+
+      const fieldToFocus =
+        activeSchema.fields.find(field =>
+          error.issues.some(issue => issue.path[0] === field.id)
+        )?.id ??
+        (typeof error.issues[0]?.path[0] === 'string'
+          ? error.issues[0].path[0]
+          : null) ??
+        activeSchema.fields[0]?.id;
+
+      if (fieldToFocus) {
+        setFocus(fieldToFocus);
+      }
+      showSnackbar(`Update failed`);
+      return;
+    }
 
     try {
       if (activeNote) {

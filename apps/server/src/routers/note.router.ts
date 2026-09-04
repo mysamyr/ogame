@@ -1,7 +1,9 @@
+import { NotFoundError, ValidationError } from '@ogame/shared/errors';
 import { Note } from '@ogame/shared/types';
 import {
   notePayload,
   noteParamsPayload,
+  validateNoteBySchema,
   getNotesQueryPayload,
   type GetNotesQuery,
   type NoteParams,
@@ -22,8 +24,8 @@ import {
   getNotes,
   updateNote,
 } from '../stores/note.js';
+import { getSchemaById } from '../stores/schema.js';
 
-import { BadRequestError } from '../utils/errors.js';
 import { uuid } from '../utils/uuid.js';
 
 export default function createNoteRouter() {
@@ -57,6 +59,15 @@ export default function createNoteRouter() {
     '/',
     validateBody(notePayload),
     promisify<unknown, Note, NotePayload>(async (req, res) => {
+      const schema = await getSchemaById(req.body.schema);
+      if (!schema) {
+        throw new NotFoundError('schema not found');
+      }
+      const result = validateNoteBySchema(req.body, schema.fields);
+      if (!result.success) {
+        throw new ValidationError(result.error);
+      }
+
       const id = uuid();
       const note = { ...req.body, id };
 
@@ -77,8 +88,17 @@ export default function createNoteRouter() {
     promisify<NoteParams, Note, NotePayload>(async (req, res) => {
       const existing = await getNoteById(req.params.id);
       if (!existing) {
-        throw new BadRequestError('note not found');
+        throw new NotFoundError('note not found');
       }
+      const schema = await getSchemaById(req.body.schema);
+      if (!schema) {
+        throw new NotFoundError('schema not found');
+      }
+      const result = validateNoteBySchema(req.body, schema.fields);
+      if (!result.success) {
+        throw new ValidationError(result.error);
+      }
+
       await updateNote(req.params.id, req.body);
 
       res.json({
@@ -98,7 +118,7 @@ export default function createNoteRouter() {
     promisify<NoteParams>(async (req, res) => {
       const existing = await getNoteById(req.params.id);
       if (!existing) {
-        throw new BadRequestError('note not found');
+        throw new NotFoundError('note not found');
       }
       await deleteNote(req.params.id);
 

@@ -1,3 +1,8 @@
+import {
+  ConflictError,
+  InternalServerError,
+  NotFoundError,
+} from '@ogame/shared/errors';
 import { Schema } from '@ogame/shared/types';
 import { toSnake } from '@ogame/shared/utils';
 import {
@@ -20,7 +25,6 @@ import {
   getSchemaById,
   upsertSchema,
 } from '../stores/schema.js';
-import { BadRequestError } from '../utils/errors.js';
 
 export default function createSchemaRouter() {
   const router = Router();
@@ -47,7 +51,7 @@ export default function createSchemaRouter() {
     validateParams(schemaParamsPayload),
     promisify<SchemaParams, SchemaImportPayload>(async (req, res) => {
       const schema = await getSchemaById(req.params.id);
-      if (!schema) throw new BadRequestError('schema not found');
+      if (!schema) throw new NotFoundError('schema not found');
 
       const notes = await getNotes(schema.id);
 
@@ -67,7 +71,7 @@ export default function createSchemaRouter() {
     validateParams(schemaParamsPayload),
     promisify<SchemaParams, Schema>(async (req, res) => {
       const schema = await getSchemaById(req.params.id);
-      if (!schema) throw new BadRequestError('schema not found');
+      if (!schema) throw new NotFoundError('schema not found');
 
       res.json(schema);
     })
@@ -84,7 +88,7 @@ export default function createSchemaRouter() {
       const id = toSnake(req.body.name);
 
       const schema = await getSchemaById(id);
-      if (schema) throw new Error('schema already exists');
+      if (schema) throw new ConflictError('schema already exists');
 
       const payload = {
         id,
@@ -94,6 +98,9 @@ export default function createSchemaRouter() {
           name: f.name,
           type: f.type,
           required: f.required,
+          min: f.min,
+          max: f.max,
+          regexp: f.regexp,
         })),
         sort: req.body.sort,
         direction: req.body.direction,
@@ -127,7 +134,7 @@ export default function createSchemaRouter() {
       }
 
       const schema = await getSchemaById(id);
-      if (!schema) throw new Error('failed to import schema');
+      if (!schema) throw new InternalServerError('failed to import schema');
 
       res.sendStatus(204);
     })
@@ -145,7 +152,7 @@ export default function createSchemaRouter() {
       const { id } = req.params;
       const { name, fields, sort, direction } = req.body;
       const schema = await getSchemaById(id);
-      if (!schema) throw new Error('schema not found');
+      if (!schema) throw new NotFoundError('schema not found');
 
       const payload = {
         id,
@@ -155,6 +162,9 @@ export default function createSchemaRouter() {
           name: f.name,
           type: f.type,
           required: f.required,
+          min: f.min,
+          max: f.max,
+          regexp: f.regexp,
         })),
         sort,
         direction,
@@ -175,7 +185,7 @@ export default function createSchemaRouter() {
     validateParams(schemaParamsPayload),
     promisify<SchemaParams>(async (req, res) => {
       const schema = await getSchemaById(req.params.id);
-      if (!schema) throw new Error('schema not found');
+      if (!schema) throw new NotFoundError('schema not found');
 
       await deleteSchema(req.params.id);
 

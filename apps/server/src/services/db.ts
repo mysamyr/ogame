@@ -58,6 +58,9 @@ export async function ensureStoreExists(): Promise<void> {
       name TEXT NOT NULL,
       type TEXT NOT NULL,
       required INTEGER NOT NULL DEFAULT 1,
+      min INTEGER,
+      max INTEGER,
+      \`regexp\` TEXT,
       PRIMARY KEY (id, schema_id)
     )
   `);

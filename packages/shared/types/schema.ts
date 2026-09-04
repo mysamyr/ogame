@@ -8,6 +8,9 @@ export type SchemaField = {
   name: string;
   type: FieldKind;
   required: boolean;
+  min: number | null;
+  max: number | null;
+  regexp: string | null;
 };
 
 export type Schema = {

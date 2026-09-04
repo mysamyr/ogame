@@ -26,6 +26,9 @@ const schemaFieldPayload = z.object({
   name,
   type: z.enum(FieldKind),
   required: z.boolean(),
+  min: z.number().nullable(),
+  max: z.number().nullable(),
+  regexp: z.string().nullable(),
 });
 
 const schemaImportFieldPayload = schemaFieldPayload.extend({
@@ -67,6 +70,60 @@ const validateUniqueFields = (
       });
     } else {
       seenFields.add(key);
+    }
+  }
+};
+
+const validateImportedFieldConstraints = (
+  field: Pick<SchemaField, 'type' | 'min' | 'max' | 'regexp'>,
+  index: number,
+  ctx: z.RefinementCtx
+) => {
+  const supportsMinMax = field.type !== FieldKind.BOOLEAN;
+
+  if (!supportsMinMax && (field.min !== null || field.max !== null)) {
+    if (field.min !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Min is not supported for boolean fields',
+        path: ['fields', index, 'min'],
+      });
+    }
+
+    if (field.max !== null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Max is not supported for boolean fields',
+        path: ['fields', index, 'max'],
+      });
+    }
+  }
+
+  if (field.min !== null && field.max !== null && field.min > field.max) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Min must be less than or equal to max',
+      path: ['fields', index, 'min'],
+    });
+  }
+
+  if (field.type !== FieldKind.STRING && field.regexp !== null) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'Regexp is only supported for string fields',
+      path: ['fields', index, 'regexp'],
+    });
+  }
+
+  if (field.regexp !== null) {
+    try {
+      new RegExp(field.regexp);
+    } catch {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Regexp must be a valid regular expression',
+        path: ['fields', index, 'regexp'],
+      });
     }
   }
 };
@@ -114,6 +171,9 @@ export const schemaImportPayload = z
   .superRefine((payload, ctx) => {
     validateUniqueFields(payload.fields, ctx);
     validateSort(payload, ctx);
+    for (const [index, field] of payload.fields.entries()) {
+      validateImportedFieldConstraints(field, index, ctx);
+    }
 
     if (
       payload.sort !== null &&

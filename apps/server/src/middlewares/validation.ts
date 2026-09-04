@@ -1,7 +1,6 @@
+import { ValidationError } from '@ogame/shared/errors';
 import type { Request, Response, NextFunction } from 'express';
 import { type ZodType, treeifyError } from 'zod';
-
-import { ValidationError } from '../utils/errors.js';
 
 export function validateQuery(schema: ZodType) {
   return (req: Request, _res: Response, next: NextFunction): void => {

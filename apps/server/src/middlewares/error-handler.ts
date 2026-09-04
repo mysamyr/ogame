@@ -1,13 +1,19 @@
+import {
+  AppError,
+  InternalServerError,
+  NotFoundError,
+} from '@ogame/shared/errors';
 import type { NextFunction, Request, Response } from 'express';
-
-import { ValidationError } from '../utils/errors.js';
 
 export function notFoundMiddleware(
   req: Request,
   res: Response,
   _next: NextFunction
 ) {
-  res.status(404).json({ error: 'Not Found', path: req.originalUrl });
+  const error = new NotFoundError(`Cannot ${req.method} ${req.originalUrl}`, {
+    path: req.originalUrl,
+  });
+  res.status(error.statusCode).json(error.toPayload());
 }
 
 export function errorHandlerMiddleware(
@@ -16,24 +22,28 @@ export function errorHandlerMiddleware(
   res: Response,
   _next: NextFunction
 ) {
-  if (err instanceof ValidationError) {
+  if (err instanceof AppError) {
     console.error(
-      `[VALIDATION ERROR] ${req.method} ${req.originalUrl}: ${JSON.stringify(err.errors)}`,
-      err.message
+      `[${err.code}] ${req.method} ${req.originalUrl}:`,
+      err.message,
+      err.details ?? ''
     );
-    const response = {
-      message: err.message,
-      fieldErrors: err.errors as Record<string, string[]>,
-    };
-    res.status(err.statusCode).json(response);
+    res.status(err.statusCode).json({
+      ...err.toPayload(),
+      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+    });
     return;
   }
+
   console.error(`[ERROR] ${req.method} ${req.originalUrl}:`, err.message);
 
   const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
+  const internalError = new InternalServerError(
+    err.message || 'Internal Server Error'
+  );
 
   res.status(statusCode).json({
-    message: err.message || 'Internal Server Error',
+    ...internalError.toPayload(),
     ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
   });
 }

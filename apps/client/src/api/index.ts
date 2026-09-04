@@ -1,3 +1,5 @@
+import { hydrateApiError, isApiError } from '@ogame/shared/errors';
+
 class Api {
   async get<T>(path: string): Promise<T> {
     return this.request<T>('GET', path);
@@ -41,10 +43,8 @@ class Api {
     if (!response.ok) {
       const errorBody = (await response.json().catch(() => ({
         message: response.statusText,
-      }))) as {
-        message?: string;
-      };
-      throw new Error(errorBody.message ?? response.statusText);
+      }))) as unknown;
+      throw hydrateApiError(errorBody, response.status);
     }
 
     if (response.status === 204) {
@@ -55,4 +55,5 @@ class Api {
   }
 }
 
+export { hydrateApiError, isApiError };
 export default new Api();

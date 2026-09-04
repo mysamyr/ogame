@@ -15,6 +15,9 @@ type SchemaFieldRecord = {
   name: string;
   type: FieldKind;
   required: number;
+  min: number | null;
+  max: number | null;
+  regexp: string | null;
 };
 
 export async function getAllSchemas(): Promise<Schema[]> {
@@ -26,7 +29,7 @@ export async function getAllSchemas(): Promise<Schema[]> {
   return Promise.all(
     schemas.map(async schema => {
       const fields = await list<SchemaFieldRecord>(
-        'SELECT id, name, type, required FROM schema_fields WHERE schema_id = ?',
+        'SELECT id, name, type, required, min, max, `regexp` FROM schema_fields WHERE schema_id = ?',
         [schema.id]
       );
       return {
@@ -48,7 +51,7 @@ export async function getSchemaById(id: string): Promise<Schema | null> {
   if (!schema) return null;
 
   const fields = await list<SchemaFieldRecord>(
-    'SELECT id, name, type, required FROM schema_fields WHERE schema_id = ?',
+    'SELECT id, name, type, required, min, max, `regexp` FROM schema_fields WHERE schema_id = ?',
     [schema.id]
   );
 
@@ -68,9 +71,18 @@ export async function createSchema(descriptor: Schema): Promise<void> {
   );
   for (const field of descriptor.fields) {
     await run(
-      'INSERT INTO schema_fields (id, schema_id, name, type, required) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO schema_fields (id, schema_id, name, type, required, min, max, `regexp`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
 
-      [field.id, descriptor.id, field.name, field.type, field.required ? 1 : 0]
+      [
+        field.id,
+        descriptor.id,
+        field.name,
+        field.type,
+        field.required ? 1 : 0,
+        field.min,
+        field.max,
+        field.regexp,
+      ]
     );
   }
 }
@@ -83,8 +95,17 @@ export async function upsertSchema(descriptor: Schema): Promise<void> {
   await run('DELETE FROM schema_fields WHERE schema_id = ?', [descriptor.id]);
   for (const field of descriptor.fields) {
     await run(
-      'INSERT INTO schema_fields (id, schema_id, name, type, required) VALUES (?, ?, ?, ?, ?)',
-      [field.id, descriptor.id, field.name, field.type, field.required ? 1 : 0]
+      'INSERT INTO schema_fields (id, schema_id, name, type, required, min, max, `regexp`) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        field.id,
+        descriptor.id,
+        field.name,
+        field.type,
+        field.required ? 1 : 0,
+        field.min,
+        field.max,
+        field.regexp,
+      ]
     );
   }
 }
