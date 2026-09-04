@@ -55,6 +55,85 @@
   vertical-align: middle;
 }
 
+.rowStatus {
+  width: 36px;
+  text-align: center !important;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.rowWarning {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--danger);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+
+.rowWarningIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.warningPill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--white-8);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.warningPillIcon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.warningPillValue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tooltip {
+  display: none;
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  bottom: calc(100% + 6px);
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  text-align: left;
+  box-shadow: var(--card-shadow);
+  pointer-events: none;
+}
+
+.rowWarning:hover .tooltip,
+.rowWarning:focus-visible .tooltip,
+.warningPill:hover .tooltip,
+.warningPill:focus-visible .tooltip {
+  display: block;
+}
+
 .noteActions {
   white-space: nowrap;
   text-align: right !important;

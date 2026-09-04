@@ -7,3 +7,4 @@ export { ImportIcon } from './ImportIcon.js';
 export { SortAscIcon } from './SortAscIcon.js';
 export { SortDescIcon } from './SortDescIcon.js';
 export { SortNeutralIcon } from './SortNeutralIcon.js';
+export { WarningIcon } from './WarningIcon.js';

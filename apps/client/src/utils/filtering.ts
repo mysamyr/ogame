@@ -4,6 +4,8 @@ import { Note } from '@ogame/shared/types';
 import { FilterLogicalOperator, FilterOperator } from '../constants/index.js';
 import type { FilterColumn, FilterRule } from '../types/index.js';
 
+import { parseBooleanValue } from './schemaValidation.js';
+
 function compareValues(
   value: unknown,
   filterValue: string,
@@ -11,7 +13,11 @@ function compareValues(
   operator: FilterRule['operator']
 ): boolean {
   if (type === FieldKind.BOOLEAN) {
-    const matches = Boolean(value) === (filterValue === 'true');
+    const parsed = parseBooleanValue(value);
+    if (!parsed.ok) {
+      return false;
+    }
+    const matches = parsed.value === (filterValue === 'true');
     return operator === FilterOperator.NOT_EQUALS ? !matches : matches;
   }
 

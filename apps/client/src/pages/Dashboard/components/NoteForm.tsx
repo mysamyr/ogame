@@ -10,12 +10,32 @@ import { saveNote, updateNote } from '../../../api/notes.js';
 import { Button } from '../../../components/index.js';
 import { ButtonVariant } from '../../../constants/index.js';
 import { useNotes, useSchemas, useSnackbar } from '../../../hooks/index.js';
-import { nowTime, todayDate } from '../../../utils/date.js';
+import {
+  coerceRecordToSchema,
+  formatUnknownValue,
+  nowTime,
+  todayDate,
+  validateRecordAgainstSchema,
+} from '../../../utils/index.js';
 
 import FieldInput from './FieldInput.js';
 import styles from './NoteForm.module.css';
 
 type FormValues = Record<string, string | number | boolean>;
+
+function toFormValue(value: unknown): FormValues[string] {
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return value;
+  }
+  if (value === null || value === undefined) {
+    return '';
+  }
+  return formatUnknownValue(value);
+}
 
 export default function NoteForm() {
   const { getActiveSchema } = useSchemas();
@@ -36,18 +56,26 @@ export default function NoteForm() {
 
     activeSchema?.fields.forEach(field => {
       const val = activeNote?.[field.id];
+      const hasStoredValue = val !== undefined && val !== null;
+
       if (field.type === FieldKind.BOOLEAN) {
-        defaults[field.id] = typeof val === 'boolean' ? val : false;
-      } else if (field.type === FieldKind.NUMBER) {
-        defaults[field.id] = typeof val === 'number' ? val : '';
+        defaults[field.id] = hasStoredValue ? toFormValue(val) : false;
+        return;
+      }
+
+      if (hasStoredValue) {
+        defaults[field.id] = toFormValue(val);
+        return;
+      }
+
+      if (field.type === FieldKind.NUMBER) {
+        defaults[field.id] = '';
       } else if (field.type === FieldKind.TIME) {
-        defaults[field.id] =
-          typeof val === 'string' ? val : field.required ? nowTime() : '';
+        defaults[field.id] = field.required ? nowTime() : '';
       } else if (field.type === FieldKind.DATE) {
-        defaults[field.id] =
-          typeof val === 'string' ? val : field.required ? todayDate() : '';
+        defaults[field.id] = field.required ? todayDate() : '';
       } else {
-        defaults[field.id] = typeof val === 'string' ? val : '';
+        defaults[field.id] = '';
       }
     });
 
@@ -58,7 +86,13 @@ export default function NoteForm() {
     defaultValues: getDefaultValues(),
     mode: 'onChange',
   });
-  const { clearErrors, handleSubmit, reset, setError, setFocus } = methods;
+  const { clearErrors, handleSubmit, reset, setError, setFocus, watch } =
+    methods;
+  const values = watch();
+  const recordValidation = validateRecordAgainstSchema(
+    values,
+    activeSchema?.fields ?? []
+  );
 
   useEffect(() => {
     reset(getDefaultValues());
@@ -72,8 +106,26 @@ export default function NoteForm() {
   const onSubmit = async (data: FormValues) => {
     if (!activeSchema) return;
 
+    const coerced = coerceRecordToSchema(data, activeSchema.fields);
+    const parsed = validateRecordAgainstSchema(coerced, activeSchema.fields);
+    if (!parsed.isValid) {
+      clearErrors();
+      Object.entries(parsed.errors).forEach(([fieldName, message]) => {
+        setError(fieldName, { type: 'manual', message });
+      });
+      const fieldToFocus =
+        activeSchema.fields.find(field => parsed.errors[field.id])?.id ??
+        Object.keys(parsed.errors)[0] ??
+        activeSchema.fields[0]?.id;
+      if (fieldToFocus) {
+        setFocus(fieldToFocus);
+      }
+      showSnackbar(`Update failed`);
+      return;
+    }
+
     const payload: Note = {
-      ...(data as Note),
+      ...(coerced as Note),
       schema: activeSchema.id,
     };
 
@@ -151,12 +203,20 @@ export default function NoteForm() {
             >
               <div className={styles.fields}>
                 {activeSchema?.fields.map(field => (
-                  <FieldInput key={field.name} field={field} />
+                  <FieldInput
+                    key={field.name}
+                    field={field}
+                    showErrors={Boolean(activeNote)}
+                  />
                 ))}
               </div>
 
               <div className={styles.buttons}>
-                <Button type="submit" id="save-btn">
+                <Button
+                  type="submit"
+                  id="save-btn"
+                  disabled={!recordValidation.isValid}
+                >
                   {activeNote ? 'Update' : 'Save'}
                 </Button>
                 {activeNote ? (

@@ -9,11 +9,14 @@
   margin-top: 6px;
 }
 
+.fieldRowWrap {
+  margin-bottom: 8px;
+}
+
 .fieldRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
   font-size: 13px;
   color: var(--muted);
   cursor: pointer;
