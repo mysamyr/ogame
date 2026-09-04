@@ -1,4 +1,4 @@
-import { FieldKind } from '@ogame/shared/constants';
+import { FieldKind, SortDirection } from '@ogame/shared/constants';
 import { Schema } from '@ogame/shared/types';
 
 import { get, list, run } from '../services/db.js';
@@ -6,6 +6,8 @@ import { get, list, run } from '../services/db.js';
 type SchemaRecord = {
   id: string;
   name: string;
+  sort: string;
+  direction: SortDirection;
 };
 
 type SchemaFieldRecord = {
@@ -18,7 +20,7 @@ type SchemaFieldRecord = {
 export async function getAllSchemas(): Promise<Schema[]> {
   // TODO: use JOIN?
   const schemas = await list<SchemaRecord>(
-    'SELECT id, name FROM schemas ORDER BY name'
+    'SELECT id, name, sort, direction FROM schemas ORDER BY name'
   );
 
   return Promise.all(
@@ -30,6 +32,8 @@ export async function getAllSchemas(): Promise<Schema[]> {
       return {
         id: schema.id,
         name: schema.name,
+        sort: schema.sort,
+        direction: schema.direction,
         fields: fields.map(f => ({ ...f, required: f.required === 1 })),
       };
     })
@@ -38,7 +42,7 @@ export async function getAllSchemas(): Promise<Schema[]> {
 
 export async function getSchemaById(id: string): Promise<Schema | null> {
   const schema = await get<SchemaRecord>(
-    'SELECT id, name FROM schemas WHERE id = ?',
+    'SELECT id, name, sort, direction FROM schemas WHERE id = ?',
     [id]
   );
   if (!schema) return null;
@@ -51,15 +55,17 @@ export async function getSchemaById(id: string): Promise<Schema | null> {
   return {
     id: schema.id,
     name: schema.name,
+    sort: schema.sort,
+    direction: schema.direction,
     fields: fields.map(f => ({ ...f, required: f.required === 1 })),
   };
 }
 
 export async function createSchema(descriptor: Schema): Promise<void> {
-  await run('INSERT INTO schemas (id, name) VALUES (?, ?)', [
-    descriptor.id,
-    descriptor.name,
-  ]);
+  await run(
+    'INSERT INTO schemas (id, name, sort, direction) VALUES (?, ?, ?, ?)',
+    [descriptor.id, descriptor.name, descriptor.sort, descriptor.direction]
+  );
   for (const field of descriptor.fields) {
     await run(
       'INSERT INTO schema_fields (id, schema_id, name, type, required) VALUES (?, ?, ?, ?, ?)',
@@ -71,8 +77,8 @@ export async function createSchema(descriptor: Schema): Promise<void> {
 
 export async function upsertSchema(descriptor: Schema): Promise<void> {
   await run(
-    'INSERT INTO schemas (id, name) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name',
-    [descriptor.id, descriptor.name]
+    'INSERT INTO schemas (id, name, sort, direction) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name, sort = excluded.sort, direction = excluded.direction',
+    [descriptor.id, descriptor.name, descriptor.sort, descriptor.direction]
   );
   await run('DELETE FROM schema_fields WHERE schema_id = ?', [descriptor.id]);
   for (const field of descriptor.fields) {

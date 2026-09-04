@@ -1,2 +1,2 @@
-export * from './note.js';
-export * from './schema.js';
+export * from './note.validation.js';
+export * from './schema.validation.js';

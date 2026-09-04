@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { NOTE_IDENTIFIER_REGEX } from '../constants/index.js';
 
-const identifier = z
+export const noteId = z
   .string()
   .trim()
   .min(1, 'Id is required')
@@ -17,7 +17,7 @@ export const getNotesQueryPayload = z.object({
 });
 
 export const noteParamsPayload = z.object({
-  id: identifier,
+  id: noteId,
 });
 
 export const notePayload = z.object({

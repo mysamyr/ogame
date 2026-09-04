@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { FieldKind } from '@ogame/shared/constants';
+import { FieldKind, SortDirection } from '@ogame/shared/constants';
 import { Note, SchemaField } from '@ogame/shared/types';
 import { toCapital } from '@ogame/shared/utils';
 
@@ -154,11 +154,24 @@ export default function NotesTable({
     ];
   }, [schema, onCopy, onEdit, onDelete]);
 
+  const defaultSorting = useMemo(() => {
+    if (!schema?.sort) return [];
+    return [
+      {
+        id: schema.sort,
+        desc: schema.direction === SortDirection.DESC,
+      },
+    ];
+  }, [schema?.sort, schema?.direction]);
+
   const table = useTable(
     {
       features,
       columns,
       data,
+      initialState: {
+        sorting: defaultSorting,
+      },
     },
     state => state.sorting
   );

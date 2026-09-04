@@ -46,7 +46,9 @@ export async function ensureStoreExists(): Promise<void> {
   await run(`
     CREATE TABLE IF NOT EXISTS schemas (
       id TEXT PRIMARY KEY,
-      name TEXT
+      name TEXT NOT NULL,
+      sort TEXT,
+      direction TEXT
     )
   `);
   await run(`

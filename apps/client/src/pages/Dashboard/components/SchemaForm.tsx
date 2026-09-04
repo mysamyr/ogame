@@ -1,11 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-import { FieldKind, NAME_REGEX } from '@ogame/shared/constants';
+import { FieldKind, NAME_REGEX, SortDirection } from '@ogame/shared/constants';
 import type { Schema, SchemaField } from '@ogame/shared/types';
+import { toSnake } from '@ogame/shared/utils';
 import type { SchemaPayload } from '@ogame/shared/validation';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-import { DeleteIcon } from '../../../components/icons/index.js';
+import {
+  DeleteIcon,
+  SortAscIcon,
+  SortDescIcon,
+  SortNeutralIcon,
+} from '../../../components/icons/index.js';
 import {
   Button,
   Checkbox,
@@ -17,6 +23,7 @@ import {
   ButtonVariant,
   IDENTIFIER_NAME_HINT,
 } from '../../../constants/index.js';
+import { classNames } from '../../../utils/index.js';
 
 import styles from './SchemaForm.module.css';
 
@@ -26,6 +33,11 @@ type Props = {
   onSubmit: (payload: SchemaPayload) => void;
   onCancel: () => void;
 };
+
+type DefaultSortState = {
+  fieldId: string;
+  direction: SortDirection;
+} | null;
 
 const FIELD_KIND_OPTIONS = Object.values(FieldKind).map(kind => ({
   value: kind,
@@ -48,6 +60,8 @@ export default function SchemaForm({
     mode: 'onChange',
     defaultValues: {
       name: initialSchema?.name ?? '',
+      sort: initialSchema?.sort ?? null,
+      direction: initialSchema?.direction ?? null,
       fields: initialSchema?.fields.map(field => ({
         name: field.name,
         type: field.type,
@@ -68,6 +82,9 @@ export default function SchemaForm({
     name: 'fields',
   });
   const watchedFields = watch('fields');
+
+  const [defaultSort, setDefaultSort] = useState<DefaultSortState>(null);
+
   const hasFieldNameError = fields.some((_, index) =>
     Boolean(errors.fields?.[index]?.name?.message)
   );
@@ -75,13 +92,50 @@ export default function SchemaForm({
   useEffect(() => {
     reset({
       name: initialSchema?.name ?? '',
+      sort: initialSchema?.sort ?? null,
+      direction: initialSchema?.direction ?? null,
       fields: initialSchema?.fields.map(field => ({
         name: field.name,
         type: field.type,
         required: field.type === FieldKind.BOOLEAN ? false : field.required,
       })) ?? [{ ...EMPTY_FIELD }],
     });
+
+    if (initialSchema?.sort && initialSchema?.direction) {
+      const initialSortIndex = initialSchema.fields.findIndex(
+        field => field.id === initialSchema.sort
+      );
+      if (initialSortIndex !== -1 && fields[initialSortIndex]) {
+        setDefaultSort({
+          fieldId: fields[initialSortIndex].id,
+          direction: initialSchema.direction,
+        });
+        return;
+      }
+    }
+
+    setDefaultSort(null);
   }, [initialSchema, reset]);
+
+  const handleToggleSort = (fieldId: string) => {
+    setDefaultSort(current => {
+      if (!current || current.fieldId !== fieldId) {
+        return { fieldId, direction: SortDirection.ASC };
+      }
+      if (current.direction === SortDirection.ASC) {
+        return { fieldId, direction: SortDirection.DESC };
+      }
+      return null;
+    });
+  };
+
+  const handleRemoveField = (index: number) => {
+    const targetField = fields[index];
+    if (targetField && defaultSort?.fieldId === targetField.id) {
+      setDefaultSort(null);
+    }
+    remove(index);
+  };
 
   const submit = (values: SchemaPayload) => {
     const normalizedName = values.name.trim();
@@ -92,7 +146,30 @@ export default function SchemaForm({
         required: field.type === FieldKind.BOOLEAN ? false : field.required,
       }))
       .filter(field => Boolean(field.name));
-    onSubmit({ name: normalizedName, fields: normalizedFields });
+
+    let sort: string | null = null;
+    let direction: SortDirection | null = null;
+
+    if (defaultSort) {
+      const sortedIndex = fields.findIndex(f => f.id === defaultSort.fieldId);
+      if (sortedIndex !== -1) {
+        const sortedFieldName = values.fields[sortedIndex]?.name?.trim();
+        const validField = normalizedFields.find(
+          field => field.name === sortedFieldName
+        );
+        if (validField) {
+          sort = toSnake(validField.name);
+          direction = defaultSort.direction;
+        }
+      }
+    }
+
+    onSubmit({
+      name: normalizedName,
+      fields: normalizedFields,
+      sort,
+      direction,
+    });
   };
 
   return (
@@ -119,6 +196,23 @@ export default function SchemaForm({
 
       {fields.map((field, index) => {
         const fieldType = watchedFields?.[index]?.type ?? FieldKind.STRING;
+        const isSorted = defaultSort?.fieldId === field.id;
+        const sortDirection = isSorted ? defaultSort.direction : null;
+        const fieldName = watchedFields?.[index]?.name?.trim() || 'field';
+
+        let sortTooltip = 'Set default sort: Ascending';
+        let sortAriaLabel = `Set default sort ascending for ${fieldName}`;
+        let SortIconComponent = SortNeutralIcon;
+
+        if (sortDirection === SortDirection.ASC) {
+          sortTooltip = 'Set default sort: Descending';
+          sortAriaLabel = `Set default sort descending for ${fieldName}`;
+          SortIconComponent = SortAscIcon;
+        } else if (sortDirection === SortDirection.DESC) {
+          sortTooltip = 'Clear default sort';
+          sortAriaLabel = `Clear default sort for ${fieldName}`;
+          SortIconComponent = SortDescIcon;
+        }
 
         return (
           <div className={styles.fieldRow} key={field.id}>
@@ -168,8 +262,20 @@ export default function SchemaForm({
             )}
             <Button
               variant={ButtonVariant.ICON}
+              className={classNames(
+                styles.sortButton,
+                isSorted && styles.sortButtonActive
+              )}
+              onClick={() => handleToggleSort(field.id)}
+              aria-label={sortAriaLabel}
+              title={sortTooltip}
+            >
+              <SortIconComponent />
+            </Button>
+            <Button
+              variant={ButtonVariant.ICON}
               className={styles.removeButton}
-              onClick={() => remove(index)}
+              onClick={() => handleRemoveField(index)}
               disabled={fields.length === 1}
               aria-label="Remove field"
               title="Remove field"

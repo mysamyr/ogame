@@ -33,6 +33,7 @@ export default function ImportSchemaModal({
         const result = schemaImportPayload.safeParse(json);
 
         if (!result.success) {
+          console.error(result.error.issues);
           onError(result.error.issues[0]?.message ?? 'Invalid schema file');
           return;
         }

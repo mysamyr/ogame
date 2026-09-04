@@ -187,31 +187,30 @@ export default function NotesBoard() {
 
   return (
     <>
+      <div className={styles.header}>
+        <h2>Notes</h2>
+        <NotesToolbar
+          activeFilterCount={filterRules.length}
+          onExport={activeSchema ? handleOpenExport : undefined}
+          onImport={handleOpenImport}
+          onOpenFilters={activeSchema ? handleOpenFilters : undefined}
+        />
+      </div>
       {activeSchema ? (
-        <>
-          <div className={styles.header}>
-            <h2>Notes</h2>
-            <NotesToolbar
-              activeFilterCount={filterRules.length}
-              onExport={handleOpenExport}
-              onImport={handleOpenImport}
-              onOpenFilters={handleOpenFilters}
-            />
-          </div>
-          {displayedNotes.length === 0 ? (
-            <div className={styles.noteMeta}>No notes</div>
-          ) : (
-            <NotesTable
-              notes={displayedNotes}
-              selectedType={selectedType}
-              filterColumns={filterColumns}
-              filterRules={filterRules}
-              onCopy={handleCopy}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          )}
-        </>
+        displayedNotes.length === 0 ? (
+          <div className={styles.noteMeta}>No notes</div>
+        ) : (
+          <NotesTable
+            key={`${selectedType}-${activeSchema.sort ?? ''}-${activeSchema.direction ?? ''}`}
+            notes={displayedNotes}
+            selectedType={selectedType}
+            filterColumns={filterColumns}
+            filterRules={filterRules}
+            onCopy={handleCopy}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )
       ) : (
         <p className={styles.placeholder}>No schema available</p>
       )}

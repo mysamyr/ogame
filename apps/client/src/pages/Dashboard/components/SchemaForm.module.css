@@ -19,7 +19,7 @@
 
 .fieldRow {
   display: grid;
-  grid-template-columns: 1fr 150px 90px auto;
+  grid-template-columns: 1fr 140px 85px 36px 36px;
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;
@@ -39,9 +39,40 @@
   color: var(--danger);
 }
 
+.sortButton {
+  color: var(--muted);
+  opacity: 0.6;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sortButton:hover,
+.sortButton:focus-visible {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.sortButtonActive {
+  color: var(--accent);
+  border-color: var(--accent);
+  background-color: var(--white-8);
+  opacity: 1;
+}
+
+.sortButtonActive:hover,
+.sortButtonActive:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .removeButton {
   color: var(--danger);
 }
+
 .removeButton:hover,
 .removeButton:focus-visible {
   color: var(--danger);

@@ -1,3 +1,4 @@
+import { Schema } from '@ogame/shared/types';
 import { toSnake } from '@ogame/shared/utils';
 import {
   schemaParamsPayload,
@@ -30,7 +31,7 @@ export default function createSchemaRouter() {
    */
   router.get(
     '/',
-    promisify(async (_req, res) => {
+    promisify<unknown, Schema[]>(async (_req, res) => {
       const schemas = await getAllSchemas();
 
       res.json(schemas);
@@ -44,7 +45,7 @@ export default function createSchemaRouter() {
   router.get(
     '/:id/export',
     validateParams(schemaParamsPayload),
-    promisify<SchemaParams>(async (req, res) => {
+    promisify<SchemaParams, SchemaImportPayload>(async (req, res) => {
       const schema = await getSchemaById(req.params.id);
       if (!schema) throw new BadRequestError('schema not found');
 
@@ -64,7 +65,7 @@ export default function createSchemaRouter() {
   router.get(
     '/:id',
     validateParams(schemaParamsPayload),
-    promisify<SchemaParams>(async (req, res) => {
+    promisify<SchemaParams, Schema>(async (req, res) => {
       const schema = await getSchemaById(req.params.id);
       if (!schema) throw new BadRequestError('schema not found');
 
@@ -79,7 +80,7 @@ export default function createSchemaRouter() {
   router.post(
     '/',
     validateBody(schemaPayload),
-    promisify<unknown, SchemaPayload>(async (req, res) => {
+    promisify<unknown, Schema, SchemaPayload>(async (req, res) => {
       const id = toSnake(req.body.name);
 
       const schema = await getSchemaById(id);
@@ -94,6 +95,8 @@ export default function createSchemaRouter() {
           type: f.type,
           required: f.required,
         })),
+        sort: req.body.sort,
+        direction: req.body.direction,
       };
 
       await createSchema(payload);
@@ -109,10 +112,16 @@ export default function createSchemaRouter() {
   router.post(
     '/import',
     validateBody(schemaImportPayload),
-    promisify<unknown, SchemaImportPayload>(async (req, res) => {
-      const { id, name, fields, notes } = req.body;
+    promisify<unknown, void, SchemaImportPayload>(async (req, res) => {
+      const { id, name, fields, notes, sort, direction } = req.body;
 
-      await upsertSchema({ id, name, fields });
+      await upsertSchema({
+        id,
+        name,
+        fields,
+        sort,
+        direction,
+      });
       for (const note of notes) {
         await upsertNote(note);
       }
@@ -132,19 +141,23 @@ export default function createSchemaRouter() {
     '/:id',
     validateParams(schemaParamsPayload),
     validateBody(schemaPayload),
-    promisify<SchemaParams, SchemaPayload>(async (req, res) => {
-      const schema = await getSchemaById(req.params.id);
+    promisify<SchemaParams, Schema, SchemaPayload>(async (req, res) => {
+      const { id } = req.params;
+      const { name, fields, sort, direction } = req.body;
+      const schema = await getSchemaById(id);
       if (!schema) throw new Error('schema not found');
 
       const payload = {
-        id: req.params.id,
-        name: req.body.name,
-        fields: req.body.fields.map(f => ({
+        id,
+        name,
+        fields: fields.map(f => ({
           id: toSnake(f.name),
           name: f.name,
           type: f.type,
           required: f.required,
         })),
+        sort,
+        direction,
       };
 
       await upsertSchema(payload);

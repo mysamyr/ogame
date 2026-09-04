@@ -1,3 +1,4 @@
+import { Note } from '@ogame/shared/types';
 import {
   notePayload,
   noteParamsPayload,
@@ -36,7 +37,7 @@ export default function createNoteRouter() {
   router.get(
     '/',
     validateQuery(getNotesQueryPayload),
-    promisify<unknown, unknown, GetNotesQuery>(async (req, res) => {
+    promisify<unknown, Note[], unknown, GetNotesQuery>(async (req, res) => {
       const limit = req.query.limit ? Number(req.query.limit) : undefined;
       const offset = req.query.offset ? Number(req.query.offset) : undefined;
       const notes = await getNotes(undefined, {
@@ -55,7 +56,7 @@ export default function createNoteRouter() {
   router.post(
     '/',
     validateBody(notePayload),
-    promisify<unknown, NotePayload>(async (req, res) => {
+    promisify<unknown, Note, NotePayload>(async (req, res) => {
       const id = uuid();
       const note = { ...req.body, id };
 
@@ -73,7 +74,7 @@ export default function createNoteRouter() {
     '/:id',
     validateParams(noteParamsPayload),
     validateBody(notePayload),
-    promisify<NoteParams, NotePayload>(async (req, res) => {
+    promisify<NoteParams, Note, NotePayload>(async (req, res) => {
       const existing = await getNoteById(req.params.id);
       if (!existing) {
         throw new BadRequestError('note not found');

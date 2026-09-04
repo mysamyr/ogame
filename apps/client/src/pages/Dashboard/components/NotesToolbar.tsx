@@ -10,9 +10,9 @@ import styles from './NotesToolbar.module.css';
 
 type Props = {
   activeFilterCount: number;
-  onExport: () => void;
+  onExport?: () => void;
   onImport: () => void;
-  onOpenFilters: () => void;
+  onOpenFilters?: () => void;
 };
 
 export default function NotesToolbar({
@@ -31,26 +31,30 @@ export default function NotesToolbar({
       >
         <ImportIcon />
       </Button>
-      <Button
-        variant={ButtonVariant.ICON}
-        onClick={onExport}
-        aria-label="Export schema"
-        title="Export schema"
-      >
-        <ExportIcon />
-      </Button>
-      <Button
-        variant={ButtonVariant.ICON}
-        className={styles.filterButton}
-        onClick={onOpenFilters}
-        aria-label="Open filters"
-        title="Open filters"
-      >
-        <FilterIcon />
-        {activeFilterCount > 0 ? (
-          <span className={styles.badge}>{activeFilterCount}</span>
-        ) : null}
-      </Button>
+      {onExport ? (
+        <Button
+          variant={ButtonVariant.ICON}
+          onClick={onExport}
+          aria-label="Export schema"
+          title="Export schema"
+        >
+          <ExportIcon />
+        </Button>
+      ) : null}
+      {onOpenFilters ? (
+        <Button
+          variant={ButtonVariant.ICON}
+          className={styles.filterButton}
+          onClick={onOpenFilters}
+          aria-label="Open filters"
+          title="Open filters"
+        >
+          <FilterIcon />
+          {activeFilterCount > 0 ? (
+            <span className={styles.badge}>{activeFilterCount}</span>
+          ) : null}
+        </Button>
+      ) : null}
     </div>
   );
 }

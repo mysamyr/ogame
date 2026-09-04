@@ -50,6 +50,7 @@ export default function Header() {
               closeModal();
               showSnackbar('Schema created');
             } catch (error) {
+              // TODO
               console.error(error);
               showSnackbar('Create failed');
             }

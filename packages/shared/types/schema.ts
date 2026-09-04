@@ -1,4 +1,7 @@
-import type { FieldKind } from '@ogame/shared/constants/index.js';
+import type {
+  FieldKind,
+  SortDirection,
+} from '@ogame/shared/constants/index.js';
 
 export type SchemaField = {
   id: string;
@@ -10,5 +13,13 @@ export type SchemaField = {
 export type Schema = {
   id: string;
   name: string;
+  /**
+   * The ID of the field by which the schema is sorted, or null if not sorted.
+   */
+  sort: string | null;
+  /**
+   * The direction in which the schema is sorted, or null if not sorted.
+   */
+  direction: SortDirection | null;
   fields: SchemaField[];
 };

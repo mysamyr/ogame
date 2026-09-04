@@ -4,3 +4,6 @@ export { EditIcon } from './EditIcon.js';
 export { ExportIcon } from './ExportIcon.js';
 export { FilterIcon } from './FilterIcon.js';
 export { ImportIcon } from './ImportIcon.js';
+export { SortAscIcon } from './SortAscIcon.js';
+export { SortDescIcon } from './SortDescIcon.js';
+export { SortNeutralIcon } from './SortNeutralIcon.js';
