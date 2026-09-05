@@ -139,6 +139,7 @@ export default function Header() {
           onChange={event => {
             applyTypeParam(event.target.value);
           }}
+          disabled={!schemas.length}
         />
         <Button variant={ButtonVariant.SECONDARY} onClick={handleCreate}>
           New

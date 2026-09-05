@@ -1,10 +1,31 @@
 import { Note } from '@ogame/shared/types';
-import { NoteParams, NotePayload } from '@ogame/shared/validation';
+import {
+  GetNotesQuery,
+  NoteParams,
+  NotePayload,
+} from '@ogame/shared/validation';
 
 import api from './index.js';
 
-export async function fetchNotes(): Promise<Note[]> {
-  return await api.get<Note[]>('/api/note');
+export async function fetchNotes(query?: GetNotesQuery): Promise<Note[]> {
+  const params = new URLSearchParams();
+  if (query?.schema) {
+    params.set('schema', query.schema);
+  }
+  if (query?.limit != null) {
+    params.set('limit', String(query.limit));
+  }
+  if (query?.offset != null) {
+    params.set('offset', String(query.offset));
+  }
+  if (query?.sort) {
+    params.set('sort', query.sort);
+  }
+  if (query?.direction) {
+    params.set('direction', query.direction);
+  }
+  const search = params.toString();
+  return await api.get<Note[]>(`/api/note${search ? `?${search}` : ''}`);
 }
 
 export async function saveNote(note: NotePayload): Promise<Note> {

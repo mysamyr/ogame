@@ -26,3 +26,5 @@ export const IDENTIFIER_NAME_HINT =
 export const IDENTIFIER_MESSAGE = 'Invalid identifier format';
 export const IDENTIFIER_NAME_MESSAGE =
   'Only letters, numbers, spaces, and underscores are allowed';
+
+export const NOTES_PAGE_SIZE = 20;

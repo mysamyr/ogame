@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { SortDirection } from '@ogame/shared/constants';
 import type { Note } from '@ogame/shared/types';
 import { toCapital } from '@ogame/shared/utils';
 import type { SchemaImportPayload } from '@ogame/shared/validation';
@@ -12,7 +13,7 @@ import {
   importSchema,
 } from '../../../api/schemas.js';
 import { ConfirmModal } from '../../../components/index.js';
-import { ButtonVariant } from '../../../constants/index.js';
+import { ButtonVariant, NOTES_PAGE_SIZE } from '../../../constants/index.js';
 import {
   useModal,
   useNotes,
@@ -27,13 +28,31 @@ import styles from './NotesBoard.module.css';
 import NotesTable from './NotesTable.js';
 import NotesToolbar from './NotesToolbar.js';
 
+type NotesSortState = {
+  sort: string;
+  direction: SortDirection;
+} | null;
+
+function sortQuery(sortState: NotesSortState) {
+  if (!sortState) {
+    return {};
+  }
+  return { sort: sortState.sort, direction: sortState.direction };
+}
+
 export default function NotesBoard() {
-  const { notes, setNotes, setActiveNote, addNote, removeNote } = useNotes();
+  const { notes, setNotes, appendNotes, setActiveNote, addNote, removeNote } =
+    useNotes();
   const { getActiveSchema, setSchemas } = useSchemas();
   const { showModal, closeModal } = useModal();
   const { showSnackbar } = useSnackbar();
   const [searchParams] = useSearchParams();
   const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
+  const [notesSort, setNotesSort] = useState<NotesSortState>(null);
+  const [nextOffset, setNextOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const loadRequestIdRef = useRef(0);
 
   const selectedType = searchParams.get('type') ?? '';
   const activeSchema = getActiveSchema(selectedType);
@@ -48,9 +67,105 @@ export default function NotesBoard() {
     );
   }, [activeSchema]);
 
+  const loadFirstPage = useCallback(
+    async (schemaId: string, sortState: NotesSortState) => {
+      const requestId = ++loadRequestIdRef.current;
+      setIsLoading(true);
+      try {
+        const page = await fetchNotes({
+          schema: schemaId,
+          limit: NOTES_PAGE_SIZE,
+          offset: 0,
+          ...sortQuery(sortState),
+        });
+        if (requestId !== loadRequestIdRef.current) {
+          return;
+        }
+        setNotes(page);
+        setNextOffset(NOTES_PAGE_SIZE);
+        setHasMore(page.length === NOTES_PAGE_SIZE);
+      } catch {
+        if (requestId !== loadRequestIdRef.current) {
+          return;
+        }
+        setNotes([]);
+        setNextOffset(0);
+        setHasMore(false);
+        showSnackbar('Failed to fetch notes');
+      } finally {
+        if (requestId === loadRequestIdRef.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [setNotes, showSnackbar]
+  );
+
   useEffect(() => {
     setFilterRules([]);
-  }, [selectedType]);
+    setNotes([]);
+    setNextOffset(0);
+    setHasMore(false);
+    if (!selectedType) {
+      setNotesSort(null);
+      return;
+    }
+    const nextSort =
+      activeSchema?.sort && activeSchema.direction
+        ? { sort: activeSchema.sort, direction: activeSchema.direction }
+        : null;
+    setNotesSort(nextSort);
+    void loadFirstPage(selectedType, nextSort);
+  }, [
+    selectedType,
+    activeSchema?.sort,
+    activeSchema?.direction,
+    loadFirstPage,
+    setNotes,
+  ]);
+
+  const handleLoadMore = async () => {
+    if (!selectedType || isLoading || !hasMore) {
+      return;
+    }
+
+    const requestId = ++loadRequestIdRef.current;
+    const offset = nextOffset;
+    setIsLoading(true);
+    try {
+      const page = await fetchNotes({
+        schema: selectedType,
+        limit: NOTES_PAGE_SIZE,
+        offset,
+        ...sortQuery(notesSort),
+      });
+      if (requestId !== loadRequestIdRef.current) {
+        return;
+      }
+      appendNotes(page);
+      setNextOffset(offset + NOTES_PAGE_SIZE);
+      setHasMore(page.length === NOTES_PAGE_SIZE);
+    } catch {
+      if (requestId !== loadRequestIdRef.current) {
+        return;
+      }
+      showSnackbar('Failed to load more notes');
+    } finally {
+      if (requestId === loadRequestIdRef.current) {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleSortChange = (sort: string | null, direction: SortDirection | null) => {
+    if (!selectedType) {
+      return;
+    }
+    const nextSort =
+      sort && direction ? { sort, direction } : null;
+    setNotesSort(nextSort);
+    void loadFirstPage(selectedType, nextSort);
+  };
 
   const handleEdit = (note: Note) => {
     setActiveNote(note);
@@ -118,12 +233,11 @@ export default function NotesBoard() {
           void (async () => {
             try {
               await importSchema(payload);
-              const [refreshedNotes, refreshedSchemas] = await Promise.all([
-                fetchNotes(),
-                fetchSchemas(),
-              ]);
-              setNotes(refreshedNotes);
+              const refreshedSchemas = await fetchSchemas();
               setSchemas(refreshedSchemas);
+              if (selectedType) {
+                await loadFirstPage(selectedType, notesSort);
+              }
               closeModal();
               showSnackbar('Schema imported');
             } catch (error) {
@@ -197,15 +311,23 @@ export default function NotesBoard() {
         />
       </div>
       {activeSchema ? (
-        displayedNotes.length === 0 ? (
-          <div className={styles.noteMeta}>No notes</div>
+        displayedNotes.length === 0 && !hasMore ? (
+          <div className={styles.noteMeta}>
+            {isLoading ? 'Loading notes…' : 'No notes'}
+          </div>
         ) : (
           <NotesTable
-            key={`${selectedType}-${activeSchema.sort ?? ''}-${activeSchema.direction ?? ''}`}
+            key={selectedType}
             notes={displayedNotes}
             selectedType={selectedType}
             filterColumns={filterColumns}
             filterRules={filterRules}
+            sort={notesSort?.sort ?? null}
+            direction={notesSort?.direction ?? null}
+            hasMore={hasMore}
+            isLoadingMore={isLoading}
+            onLoadMore={handleLoadMore}
+            onSortChange={handleSortChange}
             onCopy={handleCopy}
             onEdit={handleEdit}
             onDelete={handleDelete}

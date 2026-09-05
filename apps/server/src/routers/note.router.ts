@@ -1,3 +1,4 @@
+import { FieldKind } from '@ogame/shared/constants';
 import { NotFoundError, ValidationError } from '@ogame/shared/errors';
 import { Note } from '@ogame/shared/types';
 import {
@@ -33,18 +34,43 @@ export default function createNoteRouter() {
 
   /**
    * GET /api/note
-   * Optional query: limit, offset
-   * Return list of all notes
+   * Optional query: schema, limit, offset, sort, direction
+   * Return list of notes
    */
   router.get(
     '/',
     validateQuery(getNotesQueryPayload),
     promisify<unknown, Note[], unknown, GetNotesQuery>(async (req, res) => {
-      const limit = req.query.limit ? Number(req.query.limit) : undefined;
-      const offset = req.query.offset ? Number(req.query.offset) : undefined;
-      const notes = await getNotes(undefined, {
-        ...(limit && { limit }),
-        ...(offset && { offset }),
+      const schema = req.query.schema;
+      const limit =
+        req.query.limit !== undefined ? Number(req.query.limit) : undefined;
+      const offset =
+        req.query.offset !== undefined ? Number(req.query.offset) : undefined;
+      const sort = req.query.sort;
+      const direction = req.query.direction;
+
+      let sortKind: FieldKind | undefined;
+      if (sort) {
+        if (!schema) {
+          throw new ValidationError('schema is required when sort is provided');
+        }
+        const schemaRecord = await getSchemaById(schema);
+        if (!schemaRecord) {
+          throw new NotFoundError('schema not found');
+        }
+        const field = schemaRecord.fields.find(item => item.id === sort);
+        if (!field) {
+          throw new ValidationError(
+            `Sort field "${sort}" must exist in schema fields`
+          );
+        }
+        sortKind = field.type;
+      }
+
+      const notes = await getNotes(schema, {
+        ...(limit !== undefined && !Number.isNaN(limit) ? { limit } : {}),
+        ...(offset !== undefined && !Number.isNaN(offset) ? { offset } : {}),
+        ...(sort && direction && sortKind ? { sort, direction, sortKind } : {}),
       });
 
       res.json(notes);

@@ -7,6 +7,7 @@ export function useNotes() {
     useShallow(s => ({
       notes: s.notes,
       setNotes: s.setNotes,
+      appendNotes: s.appendNotes,
       activeNote: s.activeNote,
       setActiveNote: s.setActiveNote,
       addNote: s.addNote,

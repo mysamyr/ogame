@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { FieldKind, NOTE_IDENTIFIER_REGEX } from '../constants/index.js';
+import {
+  FieldKind,
+  NOTE_IDENTIFIER_REGEX,
+  SCHEMA_IDENTIFIER_REGEX,
+  SortDirection,
+} from '../constants/index.js';
 import type { SchemaField } from '../types/schema.js';
 
 export const noteId = z
@@ -9,13 +14,37 @@ export const noteId = z
   .min(1, 'Id is required')
   .regex(NOTE_IDENTIFIER_REGEX, 'Invalid identifier format');
 
-// TODO: string with number
-const paginationQueryParam = z.number().int().gt(0);
+const paginationLimitParam = z.coerce.number().int().gt(0);
+const paginationOffsetParam = z.coerce.number().int().min(0);
 
-export const getNotesQueryPayload = z.object({
-  limit: paginationQueryParam.optional(),
-  offset: paginationQueryParam.optional(),
-});
+export const getNotesQueryPayload = z
+  .object({
+    schema: z.string().min(1).optional(),
+    limit: paginationLimitParam.optional(),
+    offset: paginationOffsetParam.optional(),
+    sort: z
+      .string()
+      .min(1)
+      .regex(SCHEMA_IDENTIFIER_REGEX, 'Invalid sort field')
+      .optional(),
+    direction: z.enum(SortDirection).optional(),
+  })
+  .superRefine((query, ctx) => {
+    if (query.sort && query.direction == null) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Direction is required when sort is provided',
+        path: ['direction'],
+      });
+    }
+    if (query.direction != null && !query.sort) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Sort is required when direction is provided',
+        path: ['sort'],
+      });
+    }
+  });
 
 export const noteParamsPayload = z.object({
   id: noteId,

@@ -8,12 +8,8 @@ import {
   createColumnHelper,
   createCoreRowModel,
   createFilteredRowModel,
-  createSortedRowModel,
   columnFilteringFeature,
   flexRender,
-  rowSortingFeature,
-  sortFn_alphanumeric,
-  sortFn_text,
   tableFeatures,
   useTable,
 } from '@tanstack/react-table';
@@ -24,7 +20,8 @@ import {
   EditIcon,
   WarningIcon,
 } from '../../../components/icons/index.js';
-import { Checkbox } from '../../../components/index.js';
+import { Button, Checkbox } from '../../../components/index.js';
+import { ButtonVariant } from '../../../constants/index.js';
 import { useSchemas } from '../../../hooks/index.js';
 import type { FilterColumn, FilterRule } from '../../../types/index.js';
 import {
@@ -42,6 +39,12 @@ type Props = {
   selectedType: string;
   filterColumns: FilterColumn[];
   filterRules: FilterRule[];
+  sort: string | null;
+  direction: SortDirection | null;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void | Promise<void>;
+  onSortChange: (sort: string | null, direction: SortDirection | null) => void;
   onCopy: (note: Note) => Promise<void>;
   onEdit: (note: Note) => void;
   onDelete: (id: string) => void | Promise<void>;
@@ -63,42 +66,10 @@ function filterBooleanSafe(
   return parsed.value === expected.value;
 }
 
-function sortBooleanSafe(
-  rowA: {
-    getValue: (columnId: string) => unknown;
-    table: { getColumn: (columnId: string) => { getIsSorted: () => false | 'asc' | 'desc' } | undefined };
-  },
-  rowB: { getValue: (columnId: string) => unknown },
-  columnId: string
-): number {
-  const parsedA = parseBooleanValue(rowA.getValue(columnId));
-  const parsedB = parseBooleanValue(rowB.getValue(columnId));
-  const isDesc = rowA.table.getColumn(columnId)?.getIsSorted() === 'desc';
-
-  if (!parsedA.ok && !parsedB.ok) {
-    return 0;
-  }
-  if (!parsedA.ok) {
-    return isDesc ? -1 : 1;
-  }
-  if (!parsedB.ok) {
-    return isDesc ? 1 : -1;
-  }
-
-  return Number(parsedA.value) - Number(parsedB.value);
-}
-
 const features = tableFeatures({
   coreRowModel: createCoreRowModel(),
   columnFilteringFeature,
   filteredRowModel: createFilteredRowModel(),
-  rowSortingFeature,
-  sortedRowModel: createSortedRowModel(),
-  sortFns: {
-    alphanumeric: sortFn_alphanumeric,
-    booleanSafe: sortBooleanSafe,
-    text: sortFn_text,
-  },
   filterFns: {
     booleanSafe: filterBooleanSafe,
   },
@@ -169,6 +140,12 @@ export default function NotesTable({
   selectedType,
   filterColumns,
   filterRules,
+  sort,
+  direction,
+  hasMore,
+  isLoadingMore,
+  onLoadMore,
+  onSortChange,
   onCopy,
   onEdit,
   onDelete,
@@ -194,7 +171,6 @@ export default function NotesTable({
     const statusColumn = columnHelper.display({
       id: 'rowStatus',
       header: '',
-      enableSorting: false,
       cell: ({ row }) => (
         <RowStatusCell note={row.original} fields={fields} />
       ),
@@ -206,9 +182,7 @@ export default function NotesTable({
       return columnHelper.accessor(row => row[field.id], {
         id: field.id,
         header: toCapital(field.name),
-        ...(isBoolean
-          ? { sortFn: 'booleanSafe' as const, filterFn: 'booleanSafe' as const }
-          : {}),
+        ...(isBoolean ? { filterFn: 'booleanSafe' as const } : {}),
         cell: ({ getValue }) => {
           const value = getValue();
           if (isBoolean) {
@@ -240,7 +214,6 @@ export default function NotesTable({
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
-        enableSorting: false,
         cell: ({ row }) => {
           const note = row.original;
           return (
@@ -277,27 +250,26 @@ export default function NotesTable({
     ];
   }, [schema, onCopy, onEdit, onDelete]);
 
-  const defaultSorting = useMemo(() => {
-    if (!schema?.sort) return [];
-    return [
-      {
-        id: schema.sort,
-        desc: schema.direction === SortDirection.DESC,
-      },
-    ];
-  }, [schema?.sort, schema?.direction]);
+  const table = useTable({
+    features,
+    columns,
+    data,
+  });
 
-  const table = useTable(
-    {
-      features,
-      columns,
-      data,
-      initialState: {
-        sorting: defaultSorting,
-      },
-    },
-    state => state.sorting
-  );
+  const handleHeaderClick = (columnId: string, canSort: boolean) => {
+    if (!canSort) {
+      return;
+    }
+    if (sort !== columnId) {
+      onSortChange(columnId, SortDirection.ASC);
+      return;
+    }
+    if (direction === SortDirection.ASC) {
+      onSortChange(columnId, SortDirection.DESC);
+      return;
+    }
+    onSortChange(null, null);
+  };
 
   return (
     <div className={styles.tableContainer}>
@@ -306,8 +278,10 @@ export default function NotesTable({
           {table.getHeaderGroups().map(headerGroup => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map(header => {
-                const canSort = header.column.getCanSort();
-                const sorted = header.column.getIsSorted();
+                const canSort =
+                  header.id !== 'actions' && header.id !== 'rowStatus';
+                const sorted =
+                  sort === header.id && direction ? direction : false;
                 return (
                   <th
                     key={header.id}
@@ -323,11 +297,7 @@ export default function NotesTable({
                         ? { cursor: 'pointer', userSelect: 'none' }
                         : undefined
                     }
-                    onClick={
-                      canSort
-                        ? header.column.getToggleSortingHandler()
-                        : undefined
-                    }
+                    onClick={() => handleHeaderClick(header.id, canSort)}
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -357,6 +327,17 @@ export default function NotesTable({
           ))}
         </tbody>
       </table>
+      {hasMore ? (
+        <div className={styles.loadMore}>
+          <Button
+            variant={ButtonVariant.SECONDARY}
+            onClick={() => void onLoadMore()}
+            disabled={isLoadingMore}
+          >
+            {isLoadingMore ? 'Loading…' : 'Load more'}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

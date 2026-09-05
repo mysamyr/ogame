@@ -2,9 +2,8 @@ import { useEffect } from 'react';
 
 import { useSearchParams } from 'react-router-dom';
 
-import { fetchNotes } from '../../api/notes.js';
 import { fetchSchemas } from '../../api/schemas.js';
-import { useSchemas, useNotes, useSnackbar } from '../../hooks/index.js';
+import { useSchemas, useSnackbar } from '../../hooks/index.js';
 
 import Header from './components/Header.js';
 import NoteForm from './components/NoteForm.js';
@@ -14,16 +13,13 @@ import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
   const { schemas, setSchemas } = useSchemas();
-  const { setNotes } = useNotes();
   const { showSnackbar } = useSnackbar();
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     const fetch = async () => {
       try {
-        const notes = await fetchNotes();
         const schemas = await fetchSchemas();
-        setNotes(notes);
         setSchemas(schemas);
       } catch (error) {
         console.error('Failed to fetch data:', error);

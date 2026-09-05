@@ -122,6 +122,7 @@ export const useSchemasStore = create<SchemasSlice>((set, getState) => ({
 interface NotesSlice {
   notes: Note[];
   setNotes: (n: Note[]) => void;
+  appendNotes: (notes: Note[]) => void;
   activeNote: Note | null;
   setActiveNote: (n: Note | null) => void;
   addNote: (note: Note) => void;
@@ -132,6 +133,15 @@ interface NotesSlice {
 export const useNotesStore = create<NotesSlice>(set => ({
   notes: [],
   setNotes: n => set({ notes: n }),
+  appendNotes: notes =>
+    set(state => {
+      const existingIds = new Set(state.notes.map(note => note.id));
+      const unique = notes.filter(note => !existingIds.has(note.id));
+      if (unique.length === 0) {
+        return state;
+      }
+      return { notes: [...state.notes, ...unique] };
+    }),
   activeNote: null,
   setActiveNote: n => set({ activeNote: n }),
   addNote: note => set(state => ({ notes: [...state.notes, note] })),
