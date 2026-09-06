@@ -1,5 +1,10 @@
-import { FieldKind } from '@ogame/shared/constants';
+import {
+  FieldKind,
+  ISO_DATE_PATTERN,
+  ISO_TIME_PATTERN,
+} from '@ogame/shared/constants';
 import type { SchemaField } from '@ogame/shared/types';
+import { createPatternFromConfig } from '@ogame/shared/utils';
 
 export type BooleanParseResult = { ok: true; value: boolean } | { ok: false };
 
@@ -8,9 +13,6 @@ export type RecordValidationResult = {
   errors: Record<string, string>;
   typeMismatches: Record<string, boolean>;
 };
-
-const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const ISO_TIME_PATTERN = /^\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
 
 export function formatUnknownValue(value: unknown): string {
   if (typeof value === 'string') {
@@ -221,7 +223,7 @@ function validateStringField(
   }
   if (field.regexp !== null) {
     try {
-      const pattern = new RegExp(field.regexp);
+      const pattern = createPatternFromConfig(field.regexp);
       if (!pattern.test(value)) {
         setConstraintError(
           result,

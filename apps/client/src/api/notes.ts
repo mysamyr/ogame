@@ -24,6 +24,9 @@ export async function fetchNotes(
   if (query?.direction) {
     params.set('direction', query.direction);
   }
+  if (query?.filters && query.filters.length > 0) {
+    params.set('filters', JSON.stringify(query.filters));
+  }
   const search = params.toString();
   return await api.get<Note[]>(
     `/api/note/${encodeURIComponent(schemaId)}${search ? `?${search}` : ''}`

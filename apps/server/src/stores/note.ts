@@ -1,6 +1,11 @@
-import { FieldKind, SortDirection } from '@ogame/shared/constants';
+import {
+  FieldKind,
+  FilterLogicalOperator,
+  FilterOperator,
+  SortDirection,
+} from '@ogame/shared/constants';
 import type { Note } from '@ogame/shared/types';
-import type { GetNotesQuery } from '@ogame/shared/validation';
+import type { FilterRule, GetNotesQuery } from '@ogame/shared/validation';
 
 import { get, list, run } from '../services/db.js';
 
@@ -18,7 +23,12 @@ type FieldTypeRecord = {
   type: FieldKind;
 };
 
-type GetNotesConfig = GetNotesQuery & {
+export type ResolvedFilterRule = FilterRule & {
+  kind: FieldKind;
+};
+
+type GetNotesConfig = Omit<GetNotesQuery, 'filters'> & {
+  filters?: ResolvedFilterRule[];
   sortKind?: FieldKind;
 };
 
@@ -54,6 +64,95 @@ function orderByClause(config?: GetNotesConfig): string {
   const expr = sortColumn(config.sortKind);
   const direction = config.direction === SortDirection.DESC ? 'DESC' : 'ASC';
   return ` ORDER BY (${expr}) IS NULL, ${expr} ${direction}, n.id ASC`;
+}
+
+function filterValueExpression(kind: FieldKind): string {
+  const valueColumn =
+    kind === FieldKind.NUMBER
+      ? 'number'
+      : kind === FieldKind.BOOLEAN
+        ? 'boolean'
+        : kind;
+  const value = `(SELECT fv.${valueColumn}
+    FROM note_values fv
+    WHERE fv.note_id = n.id AND fv.field_id = ?)`;
+
+  if (kind === FieldKind.NUMBER) {
+    return value;
+  }
+  if (kind === FieldKind.BOOLEAN) {
+    return `COALESCE(${value}, 0)`;
+  }
+  return `COALESCE(CAST(${value} AS TEXT), '')`;
+}
+
+function comparisonOperator(operator: FilterOperator): string {
+  if (operator === FilterOperator.EQUALS) {
+    return '=';
+  }
+  if (operator === FilterOperator.NOT_EQUALS) {
+    return '!=';
+  }
+  if (operator === FilterOperator.LESS_THAN) {
+    return '<';
+  }
+  if (operator === FilterOperator.GREATER_THAN) {
+    return '>';
+  }
+  throw new Error(`Unsupported comparison operator: ${operator}`);
+}
+
+function filterCondition(rule: ResolvedFilterRule, params: unknown[]): string {
+  const expression = filterValueExpression(rule.kind);
+  params.push(rule.column);
+
+  if (
+    rule.kind === FieldKind.STRING &&
+    (rule.operator === FilterOperator.CONTAINS ||
+      rule.operator === FilterOperator.NOT_CONTAINS)
+  ) {
+    params.push(rule.value);
+    const comparison = `instr(lower(${expression}), lower(?))`;
+    return rule.operator === FilterOperator.CONTAINS
+      ? `${comparison} > 0`
+      : `${comparison} = 0`;
+  }
+
+  const operator = comparisonOperator(rule.operator);
+  const value =
+    rule.kind === FieldKind.NUMBER
+      ? Number(rule.value)
+      : rule.kind === FieldKind.BOOLEAN
+        ? rule.value === 'true'
+          ? 1
+          : 0
+        : rule.value;
+  params.push(value);
+
+  return rule.kind === FieldKind.STRING
+    ? `${expression} ${operator} ? COLLATE NOCASE`
+    : `${expression} ${operator} ?`;
+}
+
+function filterClause(
+  rules: ResolvedFilterRule[],
+  params: unknown[]
+): string | null {
+  const firstRule = rules[0];
+  if (!firstRule) {
+    return null;
+  }
+
+  let expression = filterCondition(firstRule, params);
+  for (const rule of rules.slice(1)) {
+    const logicalOperator =
+      rule.logicalOperator === FilterLogicalOperator.OR ? 'OR' : 'AND';
+    expression = `(${expression} ${logicalOperator} ${filterCondition(
+      rule,
+      params
+    )})`;
+  }
+  return expression;
 }
 
 function parseNote(row: NoteRecord): Note {
@@ -148,6 +247,11 @@ export async function getNotes(
 
   where.push('n.schema = ?');
   params.push(schemaId);
+
+  const filters = config?.filters ? filterClause(config.filters, params) : null;
+  if (filters) {
+    where.push(filters);
+  }
 
   const whereClause = where.length > 0 ? ` WHERE ${where.join(' AND ')}` : '';
   let paginationClause = '';

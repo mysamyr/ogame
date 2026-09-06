@@ -6,20 +6,6 @@ export enum ButtonVariant {
   ICON = 'icon',
 }
 
-export enum FilterOperator {
-  EQUALS = '=',
-  NOT_EQUALS = '!=',
-  CONTAINS = 'contains',
-  NOT_CONTAINS = 'not_contains',
-  LESS_THAN = '<',
-  GREATER_THAN = '>',
-}
-
-export enum FilterLogicalOperator {
-  AND = 'AND',
-  OR = 'OR',
-}
-
 export const IDENTIFIER_NAME_HINT =
   'Only letters, numbers, spaces, and underscores';
 

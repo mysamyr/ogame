@@ -1,4 +1,4 @@
-import { FieldKind } from '@ogame/shared/constants';
+import { FieldKind, FilterOperator } from '@ogame/shared/constants';
 import { NotFoundError, ValidationError } from '@ogame/shared/errors';
 import { Note } from '@ogame/shared/types';
 import {
@@ -26,16 +26,39 @@ import {
   getNotes,
   upsertNote,
 } from '../stores/note.js';
+import type { ResolvedFilterRule } from '../stores/note.js';
 import { getSchemaById } from '../stores/schema.js';
 
 import { uuid } from '../utils/uuid.js';
+
+function isOperatorAllowed(kind: FieldKind, operator: FilterOperator): boolean {
+  if (kind === FieldKind.STRING) {
+    return [
+      FilterOperator.CONTAINS,
+      FilterOperator.EQUALS,
+      FilterOperator.NOT_CONTAINS,
+      FilterOperator.NOT_EQUALS,
+    ].includes(operator);
+  }
+  if (kind === FieldKind.BOOLEAN) {
+    return [FilterOperator.EQUALS, FilterOperator.NOT_EQUALS].includes(
+      operator
+    );
+  }
+  return [
+    FilterOperator.EQUALS,
+    FilterOperator.GREATER_THAN,
+    FilterOperator.LESS_THAN,
+    FilterOperator.NOT_EQUALS,
+  ].includes(operator);
+}
 
 export default function createNoteRouter() {
   const router = Router();
 
   /**
    * GET /api/note
-   * Optional query: schema, limit, offset, sort, direction
+   * Optional query: schema, limit, offset, sort, direction, filters
    * Return list of notes
    */
   router.get(
@@ -44,32 +67,50 @@ export default function createNoteRouter() {
     validateQuery(getNotesQueryPayload),
     promisify<NoteParams, Note[], unknown, GetNotesQuery>(async (req, res) => {
       const schemaId = req.params.id;
-      const limit =
-        req.query.limit !== undefined ? Number(req.query.limit) : undefined;
-      const offset =
-        req.query.offset !== undefined ? Number(req.query.offset) : undefined;
-      const sort = req.query.sort;
-      const direction = req.query.direction;
+      const query = getNotesQueryPayload.parse(req.query);
+      const { direction, filters = [], limit, offset, sort } = query;
 
       let sortKind: FieldKind | undefined;
-      if (sort) {
+      let resolvedFilters: ResolvedFilterRule[] = [];
+      if (sort || filters.length > 0) {
         const schemaRecord = await getSchemaById(schemaId);
         if (!schemaRecord) {
           throw new NotFoundError('schema not found');
         }
-        const field = schemaRecord.fields.find(item => item.id === sort);
-        if (!field) {
-          throw new ValidationError(
-            `Sort field "${sort}" must exist in schema fields`
-          );
+
+        if (sort) {
+          const field = schemaRecord.fields.find(item => item.id === sort);
+          if (!field) {
+            throw new ValidationError(
+              `Sort field "${sort}" must exist in schema fields`
+            );
+          }
+          sortKind = field.type;
         }
-        sortKind = field.type;
+
+        resolvedFilters = filters.map(rule => {
+          const field = schemaRecord.fields.find(
+            item => item.id === rule.column
+          );
+          if (!field) {
+            throw new ValidationError(
+              `Filter field "${rule.column}" must exist in schema fields`
+            );
+          }
+          if (!isOperatorAllowed(field.type, rule.operator)) {
+            throw new ValidationError(
+              `Filter operator "${rule.operator}" is not valid for field "${rule.column}"`
+            );
+          }
+          return { ...rule, kind: field.type };
+        });
       }
 
       const notes = await getNotes(schemaId, {
-        ...(limit !== undefined && !Number.isNaN(limit) ? { limit } : {}),
-        ...(offset !== undefined && !Number.isNaN(offset) ? { offset } : {}),
+        ...(limit !== undefined ? { limit } : {}),
+        ...(offset !== undefined ? { offset } : {}),
         ...(sort && direction && sortKind ? { sort, direction, sortKind } : {}),
+        ...(resolvedFilters.length > 0 ? { filters: resolvedFilters } : {}),
       });
 
       res.json(notes);

@@ -4,17 +4,18 @@ import {
   useState,
 } from 'react';
 
-import { FieldKind } from '@ogame/shared/constants';
+import {
+  FieldKind,
+  FilterLogicalOperator,
+  FilterOperator,
+} from '@ogame/shared/constants';
+import type { FilterRule } from '@ogame/shared/validation';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { DeleteIcon, DragHandleIcon } from '../../../../components/icons/index.js';
 import { Button, Dropdown, Input } from '../../../../components/index.js';
-import {
-  ButtonVariant,
-  FilterLogicalOperator,
-  FilterOperator,
-} from '../../../../constants/index.js';
-import type { FilterColumn, FilterRule } from '../../../../types/index.js';
+import { ButtonVariant } from '../../../../constants/index.js';
+import type { FilterColumn } from '../../../../types/index.js';
 import { classNames } from '../../../../utils/index.js';
 
 import styles from './FilterBuilderModal.module.css';

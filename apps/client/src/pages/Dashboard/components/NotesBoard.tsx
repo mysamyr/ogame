@@ -3,7 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SortDirection } from '@ogame/shared/constants';
 import type { Note } from '@ogame/shared/types';
 import { toCapital } from '@ogame/shared/utils';
-import type { SchemaImportPayload } from '@ogame/shared/validation';
+import type {
+  FilterRule,
+  SchemaImportPayload,
+} from '@ogame/shared/validation';
 import { useSearchParams } from 'react-router-dom';
 
 import { copyNote, deleteNote, fetchNotes } from '../../../api/notes.js';
@@ -20,7 +23,7 @@ import {
   useSchemas,
   useSnackbar,
 } from '../../../hooks/index.js';
-import type { FilterColumn, FilterRule } from '../../../types/index.js';
+import type { FilterColumn } from '../../../types/index.js';
 
 import FilterBuilderModal from './modals/FilterBuilderModal.js';
 import ImportSchemaModal from './modals/ImportSchemaModal.js';
@@ -68,7 +71,11 @@ export default function NotesBoard() {
   }, [activeSchema]);
 
   const loadFirstPage = useCallback(
-    async (schemaId: string, sortState: NotesSortState) => {
+    async (
+      schemaId: string,
+      sortState: NotesSortState,
+      filters: FilterRule[]
+    ) => {
       const requestId = ++loadRequestIdRef.current;
       setIsLoading(true);
       try {
@@ -76,6 +83,7 @@ export default function NotesBoard() {
           limit: NOTES_PAGE_SIZE,
           offset: 0,
           ...sortQuery(sortState),
+          ...(filters.length > 0 ? { filters } : {}),
         });
         if (requestId !== loadRequestIdRef.current) {
           return;
@@ -114,7 +122,7 @@ export default function NotesBoard() {
         ? { sort: activeSchema.sort, direction: activeSchema.direction }
         : null;
     setNotesSort(nextSort);
-    void loadFirstPage(selectedType, nextSort);
+    void loadFirstPage(selectedType, nextSort, []);
   }, [
     selectedType,
     activeSchema?.sort,
@@ -136,6 +144,7 @@ export default function NotesBoard() {
         limit: NOTES_PAGE_SIZE,
         offset,
         ...sortQuery(notesSort),
+        ...(filterRules.length > 0 ? { filters: filterRules } : {}),
       });
       if (requestId !== loadRequestIdRef.current) {
         return;
@@ -159,10 +168,9 @@ export default function NotesBoard() {
     if (!selectedType) {
       return;
     }
-    const nextSort =
-      sort && direction ? { sort, direction } : null;
+    const nextSort = sort && direction ? { sort, direction } : null;
     setNotesSort(nextSort);
-    void loadFirstPage(selectedType, nextSort);
+    void loadFirstPage(selectedType, nextSort, filterRules);
   };
 
   const handleEdit = (note: Note) => {
@@ -212,7 +220,12 @@ export default function NotesBoard() {
       props: {
         columns: filterColumns,
         initialRules: filterRules,
-        onApply: setFilterRules,
+        onApply: (rules: FilterRule[]) => {
+          setFilterRules(rules);
+          if (selectedType) {
+            void loadFirstPage(selectedType, notesSort, rules);
+          }
+        },
         onCancel: closeModal,
       },
     });
@@ -234,7 +247,7 @@ export default function NotesBoard() {
               const refreshedSchemas = await fetchSchemas();
               setSchemas(refreshedSchemas);
               if (selectedType) {
-                await loadFirstPage(selectedType, notesSort);
+                await loadFirstPage(selectedType, notesSort, filterRules);
               }
               closeModal();
               showSnackbar('Schema imported');
@@ -318,8 +331,6 @@ export default function NotesBoard() {
             key={selectedType}
             notes={displayedNotes}
             selectedType={selectedType}
-            filterColumns={filterColumns}
-            filterRules={filterRules}
             sort={notesSort?.sort ?? null}
             direction={notesSort?.direction ?? null}
             hasMore={hasMore}

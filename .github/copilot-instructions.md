@@ -21,6 +21,9 @@
 ## API & Data Patterns
 
 - Managed in `api/index.ts` via custom `Api` fetch client. Serializes non-2xx responses via `hydrateApiError`, throwing strongly-typed `AppError` subclasses (e.g., `NotFoundError`, `ValidationError`).
+- Notes are filtered, sorted, and paginated by `GET /api/note/:schemaId`. Ordered filter rules are sent as URL-encoded JSON in
+  the `filters` query parameter, validated against the selected schema in the router, and compiled to parameterized SQLite
+  predicates in the note store before sorting and pagination.
 - Standardized error handling contracts live in `@ogame/shared/errors` (`ErrorCode`, `ApiErrorPayload`, `AppError`, domain subclasses, `isApiError`, and `hydrateApiError`).
 - Router functions **MUST** wrap async callbacks in `promisify` middleware to route uncaught rejections to the global
   error handler.

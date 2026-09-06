@@ -7,8 +7,6 @@ import { toCapital } from '@ogame/shared/utils';
 import {
   createColumnHelper,
   createCoreRowModel,
-  createFilteredRowModel,
-  columnFilteringFeature,
   flexRender,
   tableFeatures,
   useTable,
@@ -23,11 +21,9 @@ import {
 import { Button, Checkbox } from '../../../components/index.js';
 import { ButtonVariant } from '../../../constants/index.js';
 import { useSchemas } from '../../../hooks/index.js';
-import type { FilterColumn, FilterRule } from '../../../types/index.js';
 import {
   formatNumber,
   formatUnknownValue,
-  matchesFilterRules,
   parseBooleanValue,
   validateRecordAgainstSchema,
 } from '../../../utils/index.js';
@@ -37,8 +33,6 @@ import styles from './NotesTable.module.css';
 type Props = {
   notes: Note[];
   selectedType: string;
-  filterColumns: FilterColumn[];
-  filterRules: FilterRule[];
   sort: string | null;
   direction: SortDirection | null;
   hasMore: boolean;
@@ -50,29 +44,8 @@ type Props = {
   onDelete: (id: string) => void | Promise<void>;
 };
 
-function filterBooleanSafe(
-  row: { getValue: (columnId: string) => unknown },
-  columnId: string,
-  filterValue: unknown
-): boolean {
-  const parsed = parseBooleanValue(row.getValue(columnId));
-  if (!parsed.ok) {
-    return false;
-  }
-  const expected = parseBooleanValue(filterValue);
-  if (!expected.ok) {
-    return false;
-  }
-  return parsed.value === expected.value;
-}
-
 const features = tableFeatures({
   coreRowModel: createCoreRowModel(),
-  columnFilteringFeature,
-  filteredRowModel: createFilteredRowModel(),
-  filterFns: {
-    booleanSafe: filterBooleanSafe,
-  },
 });
 const columnHelper = createColumnHelper<typeof features, Note>();
 
@@ -138,8 +111,6 @@ function RowStatusCell({
 export default function NotesTable({
   notes,
   selectedType,
-  filterColumns,
-  filterRules,
   sort,
   direction,
   hasMore,
@@ -155,14 +126,6 @@ export default function NotesTable({
   const schema = useMemo(
     () => schemas.find(item => item.id === selectedType) ?? null,
     [schemas, selectedType]
-  );
-
-  const data = useMemo(
-    () =>
-      (notes ?? []).filter(note =>
-        matchesFilterRules(note, filterRules, filterColumns)
-      ),
-    [notes, filterRules, filterColumns]
   );
 
   const columns = useMemo(() => {
@@ -182,7 +145,6 @@ export default function NotesTable({
       return columnHelper.accessor(row => row[field.id], {
         id: field.id,
         header: toCapital(field.name),
-        ...(isBoolean ? { filterFn: 'booleanSafe' as const } : {}),
         cell: ({ getValue }) => {
           const value = getValue();
           if (isBoolean) {
@@ -253,7 +215,7 @@ export default function NotesTable({
   const table = useTable({
     features,
     columns,
-    data,
+    data: notes,
   });
 
   const handleHeaderClick = (columnId: string, canSort: boolean) => {

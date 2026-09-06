@@ -1,3 +1,3 @@
 # TODOs
 
-- [ ] notes filtering on server
+- [x] notes filtering on server

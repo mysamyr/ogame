@@ -2,11 +2,14 @@ import { z } from 'zod';
 
 import {
   FieldKind,
+  FilterLogicalOperator,
+  FilterOperator,
   NOTE_IDENTIFIER_REGEX,
   SCHEMA_IDENTIFIER_REGEX,
   SortDirection,
 } from '../constants/index.js';
 import type { SchemaField } from '../types/schema.js';
+import { createPatternFromConfig } from '../utils/index.js';
 
 export const noteId = z
   .string()
@@ -16,6 +19,35 @@ export const noteId = z
 
 const paginationLimitParam = z.coerce.number().int().gt(0);
 const paginationOffsetParam = z.coerce.number().int().min(0);
+
+export const filterRulePayload = z.object({
+  column: z
+    .string()
+    .min(1)
+    .regex(SCHEMA_IDENTIFIER_REGEX, 'Invalid filter field'),
+  operator: z.enum(FilterOperator),
+  value: z.string(),
+  logicalOperator: z.enum(FilterLogicalOperator),
+});
+
+export const filterRulesPayload = z.array(filterRulePayload);
+
+const filterRulesQueryParam = z.string().transform((value, ctx) => {
+  try {
+    const result = filterRulesPayload.safeParse(JSON.parse(value));
+    if (result.success) {
+      return result.data;
+    }
+  } catch {
+    // Report a single query-level issue below.
+  }
+
+  ctx.addIssue({
+    code: 'custom',
+    message: 'Filters must be a valid JSON array of filter rules',
+  });
+  return z.NEVER;
+});
 
 export const getNotesQueryPayload = z
   .object({
@@ -28,6 +60,7 @@ export const getNotesQueryPayload = z
       .regex(SCHEMA_IDENTIFIER_REGEX, 'Invalid sort field')
       .optional(),
     direction: z.enum(SortDirection).optional(),
+    filters: filterRulesQueryParam.optional(),
   })
   .superRefine((query, ctx) => {
     if (query.sort && query.direction == null) {
@@ -79,7 +112,7 @@ export function validateNoteBySchema(
         });
       }
       if (field.regexp !== null) {
-        schema = schema.regex(new RegExp(field.regexp), {
+        schema = schema.regex(createPatternFromConfig(field.regexp), {
           error: `Field "${field.name}" does not match configured pattern`,
         });
       }
@@ -120,5 +153,6 @@ export function validateNoteBySchema(
 }
 
 export type GetNotesQuery = z.infer<typeof getNotesQueryPayload>;
+export type FilterRule = z.infer<typeof filterRulePayload>;
 export type NoteParams = z.infer<typeof noteParamsPayload>;
 export type NotePayload = z.infer<typeof notePayload>;
