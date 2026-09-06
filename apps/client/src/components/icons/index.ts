@@ -1,5 +1,6 @@
 export { CopyIcon } from './CopyIcon.js';
 export { DeleteIcon } from './DeleteIcon.js';
+export { DragHandleIcon } from './DragHandleIcon.js';
 export { EditIcon } from './EditIcon.js';
 export { ExportIcon } from './ExportIcon.js';
 export { FilterIcon } from './FilterIcon.js';

@@ -4,9 +4,17 @@
 
 - **Monorepo (NPM Workspaces)**: `@ogame/client` (Vite, React 19, React Router 7, Zustand 5, React Hook Form 7, TanStack
   Table 9) & `@ogame/server` (Express 5, Node 24+, SQLite 3 via `sqlite3`, Zod 4).
-- **Database**: SQLite3 (`store.db` at root) initialized inside `services/db.ts`.
+- **Database**: SQLite3 (`store.db` at root) initialized inside `services/db.ts`. Notes are stored as
+  header rows in `notes` (`id`, `schema`) plus typed EAV rows in `note_values` (`note_id`, `field_id`,
+  and nullable `string` / `number` / `boolean` / `date` / `time` columns; composite PK
+  `(note_id, field_id)`). Schemas use `schemas` + `schema_fields` (including server-only
+  `position` on fields; API/client order is the `fields[]` array index). Foreign keys are
+  enabled via `PRAGMA foreign_keys = ON`.
 - **Styling**: **CSS Modules** (`*.module.css`) and `/apps/client/public/style.css`. Utility CSS frameworks (e.g.,
   Tailwind) and inline CSS are strictly prohibited.
+- **Field / filter reorder UI**: Handle-only HTML5 drag-and-drop via `useFieldArray.move` (no DnD libraries). Grip
+  lives left of the name control in `SchemaForm` and `FilterBuilderModal`; order is the `fields[]` / `rules[]`
+  array index on submit/apply.
 - **Imports (ESM)**: Local imports **MUST** end in `.js` (e.g., `import x from './x.js'`) per
   `"moduleResolution": "NodeNext"`.
 
@@ -43,6 +51,7 @@ between groups). Run `npm run lint:fix` to group and sort imports.
 - Omit the `.js` extension on local TypeScript relative imports.
 - Try to run tests as they are absent.
 - Use git.
+- Try to test changes by running project (npm run dev) or browser checks.
 
 ## Self-Maintenance Rule
 

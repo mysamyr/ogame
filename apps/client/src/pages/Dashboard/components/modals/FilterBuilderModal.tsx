@@ -1,7 +1,13 @@
+import {
+  type DragEvent,
+  useRef,
+  useState,
+} from 'react';
+
 import { FieldKind } from '@ogame/shared/constants';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-import { DeleteIcon } from '../../../../components/icons/index.js';
+import { DeleteIcon, DragHandleIcon } from '../../../../components/icons/index.js';
 import { Button, Dropdown, Input } from '../../../../components/index.js';
 import {
   ButtonVariant,
@@ -9,6 +15,7 @@ import {
   FilterOperator,
 } from '../../../../constants/index.js';
 import type { FilterColumn, FilterRule } from '../../../../types/index.js';
+import { classNames } from '../../../../utils/index.js';
 
 import styles from './FilterBuilderModal.module.css';
 
@@ -79,11 +86,48 @@ export default function FilterBuilderModal({
         rules: initialRules.length > 0 ? initialRules : [createRule(columns)],
       },
     });
-  const { fields, append, remove, replace } = useFieldArray({
+  const { fields, append, move, remove, replace } = useFieldArray({
     control,
     name: 'rules',
   });
   const rules = watch('rules');
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const dragFromIndexRef = useRef<number | null>(null);
+  const ruleRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleDragStart = (index: number, event: DragEvent<HTMLButtonElement>) => {
+    dragFromIndexRef.current = index;
+    setDraggingIndex(index);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(index));
+    const ruleElement = ruleRefs.current[index];
+    if (ruleElement) {
+      event.dataTransfer.setDragImage(ruleElement, 16, 16);
+    }
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (toIndex: number, event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const fromIndex = dragFromIndexRef.current;
+    if (fromIndex == null || fromIndex === toIndex) {
+      setDraggingIndex(null);
+      dragFromIndexRef.current = null;
+      return;
+    }
+    move(fromIndex, toIndex);
+    setDraggingIndex(null);
+    dragFromIndexRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDraggingIndex(null);
+    dragFromIndexRef.current = null;
+  };
 
   return (
     <form
@@ -122,7 +166,28 @@ export default function FilterBuilderModal({
                   {...register(`rules.${index}.logicalOperator`)}
                 />
               ) : null}
-              <div className={styles.rule}>
+              <div
+                ref={element => {
+                  ruleRefs.current[index] = element;
+                }}
+                className={classNames(
+                  styles.rule,
+                  draggingIndex === index && styles.dragging
+                )}
+                onDragOver={handleDragOver}
+                onDrop={event => handleDrop(index, event)}
+              >
+                <button
+                  type="button"
+                  className={styles.dragHandle}
+                  draggable
+                  aria-label="Reorder filter"
+                  title="Reorder filter"
+                  onDragStart={event => handleDragStart(index, event)}
+                  onDragEnd={handleDragEnd}
+                >
+                  <DragHandleIcon />
+                </button>
                 <Dropdown
                   options={columns.map(columnOption => ({
                     label: columnOption.label,
@@ -168,11 +233,13 @@ export default function FilterBuilderModal({
                 )}
                 {fieldType === FieldKind.BOOLEAN ? (
                   <Dropdown
+                    className={styles.value}
                     options={BOOLEAN_OPTIONS}
                     {...register(`rules.${index}.value`)}
                   />
                 ) : (
                   <Input
+                    className={styles.value}
                     type={getInputType(fieldType)}
                     {...register(`rules.${index}.value`)}
                   />

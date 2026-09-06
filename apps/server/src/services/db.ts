@@ -36,11 +36,11 @@ export function get<T>(
 }
 
 export async function ensureStoreExists(): Promise<void> {
+  await run('PRAGMA foreign_keys = ON');
   await run(`
     CREATE TABLE IF NOT EXISTS notes (
       id TEXT PRIMARY KEY,
-      schema TEXT NOT NULL,
-      payload TEXT NOT NULL
+      schema TEXT NOT NULL
     )
   `);
   await run(`
@@ -61,7 +61,20 @@ export async function ensureStoreExists(): Promise<void> {
       min INTEGER,
       max INTEGER,
       \`regexp\` TEXT,
+      position INTEGER NOT NULL,
       PRIMARY KEY (id, schema_id)
+    )
+  `);
+  await run(`
+    CREATE TABLE IF NOT EXISTS note_values (
+      note_id TEXT NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+      field_id TEXT NOT NULL,
+      string TEXT,
+      number REAL,
+      boolean INTEGER,
+      date TEXT,
+      time TEXT,
+      PRIMARY KEY (note_id, field_id)
     )
   `);
 }

@@ -23,9 +23,41 @@
 
 .fieldRow {
   display: grid;
-  grid-template-columns: 1fr 140px 85px 36px 64px 36px;
+  grid-template-columns: 36px 1fr 140px 85px 36px 64px 36px;
   gap: 8px;
   align-items: center;
+}
+
+.dragHandle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--white-8);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+}
+
+.dragHandle:hover,
+.dragHandle:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragHandle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dragging {
+  opacity: 0.5;
 }
 
 .checkboxLabel {

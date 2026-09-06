@@ -4,6 +4,7 @@ import { Note } from '@ogame/shared/types';
 import {
   notePayload,
   noteParamsPayload,
+  schemaParamsPayload,
   validateNoteBySchema,
   getNotesQueryPayload,
   type GetNotesQuery,
@@ -23,7 +24,7 @@ import {
   deleteNote,
   getNoteById,
   getNotes,
-  updateNote,
+  upsertNote,
 } from '../stores/note.js';
 import { getSchemaById } from '../stores/schema.js';
 
@@ -38,10 +39,11 @@ export default function createNoteRouter() {
    * Return list of notes
    */
   router.get(
-    '/',
+    '/:id',
+    validateParams(schemaParamsPayload),
     validateQuery(getNotesQueryPayload),
-    promisify<unknown, Note[], unknown, GetNotesQuery>(async (req, res) => {
-      const schema = req.query.schema;
+    promisify<NoteParams, Note[], unknown, GetNotesQuery>(async (req, res) => {
+      const schemaId = req.params.id;
       const limit =
         req.query.limit !== undefined ? Number(req.query.limit) : undefined;
       const offset =
@@ -51,10 +53,7 @@ export default function createNoteRouter() {
 
       let sortKind: FieldKind | undefined;
       if (sort) {
-        if (!schema) {
-          throw new ValidationError('schema is required when sort is provided');
-        }
-        const schemaRecord = await getSchemaById(schema);
+        const schemaRecord = await getSchemaById(schemaId);
         if (!schemaRecord) {
           throw new NotFoundError('schema not found');
         }
@@ -67,7 +66,7 @@ export default function createNoteRouter() {
         sortKind = field.type;
       }
 
-      const notes = await getNotes(schema, {
+      const notes = await getNotes(schemaId, {
         ...(limit !== undefined && !Number.isNaN(limit) ? { limit } : {}),
         ...(offset !== undefined && !Number.isNaN(offset) ? { offset } : {}),
         ...(sort && direction && sortKind ? { sort, direction, sortKind } : {}),
@@ -125,7 +124,7 @@ export default function createNoteRouter() {
         throw new ValidationError(result.error);
       }
 
-      await updateNote(req.params.id, req.body);
+      await upsertNote({ id: req.params.id, ...req.body });
 
       res.json({
         id: req.params.id,

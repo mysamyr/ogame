@@ -72,8 +72,7 @@ export default function NotesBoard() {
       const requestId = ++loadRequestIdRef.current;
       setIsLoading(true);
       try {
-        const page = await fetchNotes({
-          schema: schemaId,
+        const page = await fetchNotes(schemaId, {
           limit: NOTES_PAGE_SIZE,
           offset: 0,
           ...sortQuery(sortState),
@@ -133,8 +132,7 @@ export default function NotesBoard() {
     const offset = nextOffset;
     setIsLoading(true);
     try {
-      const page = await fetchNotes({
-        schema: selectedType,
+      const page = await fetchNotes(selectedType, {
         limit: NOTES_PAGE_SIZE,
         offset,
         ...sortQuery(notesSort),

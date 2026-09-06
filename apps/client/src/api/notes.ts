@@ -7,11 +7,11 @@ import {
 
 import api from './index.js';
 
-export async function fetchNotes(query?: GetNotesQuery): Promise<Note[]> {
+export async function fetchNotes(
+  schemaId: string,
+  query?: GetNotesQuery
+): Promise<Note[]> {
   const params = new URLSearchParams();
-  if (query?.schema) {
-    params.set('schema', query.schema);
-  }
   if (query?.limit != null) {
     params.set('limit', String(query.limit));
   }
@@ -25,7 +25,9 @@ export async function fetchNotes(query?: GetNotesQuery): Promise<Note[]> {
     params.set('direction', query.direction);
   }
   const search = params.toString();
-  return await api.get<Note[]>(`/api/note${search ? `?${search}` : ''}`);
+  return await api.get<Note[]>(
+    `/api/note/${encodeURIComponent(schemaId)}${search ? `?${search}` : ''}`
+  );
 }
 
 export async function saveNote(note: NotePayload): Promise<Note> {

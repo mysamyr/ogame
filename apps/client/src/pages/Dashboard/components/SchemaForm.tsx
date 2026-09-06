@@ -1,4 +1,9 @@
-import { useEffect, useState } from 'react';
+import {
+  type DragEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { FieldKind, NAME_REGEX, SortDirection } from '@ogame/shared/constants';
 import type { Schema, SchemaField } from '@ogame/shared/types';
@@ -8,6 +13,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 
 import {
   DeleteIcon,
+  DragHandleIcon,
   FilterIcon,
   SortAscIcon,
   SortDescIcon,
@@ -35,8 +41,12 @@ type Props = {
   onCancel: () => void;
 };
 
+/**
+ * `useFieldArray` regenerates its `id`s on every `reset`, so the default sort
+ * is tracked by the `fields[]` array index and remapped on reorder/remove.
+ */
 type DefaultSortState = {
-  fieldId: string;
+  fieldIndex: number;
   direction: SortDirection;
 } | null;
 
@@ -52,6 +62,19 @@ const EMPTY_FIELD: Omit<SchemaField, 'id'> = {
   min: null,
   max: null,
   regexp: null,
+};
+
+const getDefaultSortState = (schema?: Schema): DefaultSortState => {
+  if (!schema?.sort || !schema.direction) return null;
+  const fieldIndex = schema.fields.findIndex(field => field.id === schema.sort);
+  return fieldIndex === -1 ? null : { fieldIndex, direction: schema.direction };
+};
+
+const remapIndexAfterMove = (index: number, from: number, to: number) => {
+  if (index === from) return to;
+  if (from < index && index <= to) return index - 1;
+  if (to <= index && index < from) return index + 1;
+  return index;
 };
 
 /**
@@ -118,16 +141,70 @@ export default function SchemaForm({
     formState: { errors },
     reset,
   } = methods;
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, move, remove } = useFieldArray({
     control,
     name: 'fields',
   });
   const watchedFields = watch('fields');
 
-  const [defaultSort, setDefaultSort] = useState<DefaultSortState>(null);
+  const [defaultSort, setDefaultSort] = useState<DefaultSortState>(() =>
+    getDefaultSortState(initialSchema)
+  );
   const [openValidationRows, setOpenValidationRows] = useState<Set<string>>(
     new Set()
   );
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const dragFromIndexRef = useRef<number | null>(null);
+  const fieldGroupRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const handleDragStart = (
+    index: number,
+    event: DragEvent<HTMLButtonElement>
+  ) => {
+    dragFromIndexRef.current = index;
+    setDraggingIndex(index);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(index));
+    const fieldGroupElement = fieldGroupRefs.current[index];
+    if (fieldGroupElement) {
+      event.dataTransfer.setDragImage(fieldGroupElement, 16, 16);
+    }
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (toIndex: number, event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const fromIndex = dragFromIndexRef.current;
+    if (fromIndex == null || fromIndex === toIndex) {
+      setDraggingIndex(null);
+      dragFromIndexRef.current = null;
+      return;
+    }
+    move(fromIndex, toIndex);
+    setDefaultSort(current =>
+      current
+        ? {
+            ...current,
+            fieldIndex: remapIndexAfterMove(
+              current.fieldIndex,
+              fromIndex,
+              toIndex
+            ),
+          }
+        : current
+    );
+    setDraggingIndex(null);
+    dragFromIndexRef.current = null;
+  };
+
+  const handleDragEnd = () => {
+    setDraggingIndex(null);
+    dragFromIndexRef.current = null;
+  };
 
   const hasFieldNameError = fields.some((_, index) =>
     Boolean(errors.fields?.[index]?.name?.message)
@@ -148,29 +225,16 @@ export default function SchemaForm({
       })) ?? [{ ...EMPTY_FIELD }],
     });
 
-    if (initialSchema?.sort && initialSchema?.direction) {
-      const initialSortIndex = initialSchema.fields.findIndex(
-        field => field.id === initialSchema.sort
-      );
-      if (initialSortIndex !== -1 && fields[initialSortIndex]) {
-        setDefaultSort({
-          fieldId: fields[initialSortIndex].id,
-          direction: initialSchema.direction,
-        });
-        return;
-      }
-    }
-
-    setDefaultSort(null);
+    setDefaultSort(getDefaultSortState(initialSchema));
   }, [initialSchema, reset]);
 
-  const handleToggleSort = (fieldId: string) => {
+  const handleToggleSort = (fieldIndex: number) => {
     setDefaultSort(current => {
-      if (!current || current.fieldId !== fieldId) {
-        return { fieldId, direction: SortDirection.ASC };
+      if (!current || current.fieldIndex !== fieldIndex) {
+        return { fieldIndex, direction: SortDirection.ASC };
       }
       if (current.direction === SortDirection.ASC) {
-        return { fieldId, direction: SortDirection.DESC };
+        return { fieldIndex, direction: SortDirection.DESC };
       }
       return null;
     });
@@ -178,9 +242,13 @@ export default function SchemaForm({
 
   const handleRemoveField = (index: number) => {
     const targetField = fields[index];
-    if (targetField && defaultSort?.fieldId === targetField.id) {
-      setDefaultSort(null);
-    }
+    setDefaultSort(current => {
+      if (!current) return current;
+      if (current.fieldIndex === index) return null;
+      return current.fieldIndex > index
+        ? { ...current, fieldIndex: current.fieldIndex - 1 }
+        : current;
+    });
     if (targetField) {
       setOpenValidationRows(current => {
         if (!current.has(targetField.id)) return current;
@@ -254,16 +322,14 @@ export default function SchemaForm({
     let direction: SortDirection | null = null;
 
     if (defaultSort) {
-      const sortedIndex = fields.findIndex(f => f.id === defaultSort.fieldId);
-      if (sortedIndex !== -1) {
-        const sortedFieldName = values.fields[sortedIndex]?.name?.trim();
-        const validField = normalizedFields.find(
-          field => field.name === sortedFieldName
-        );
-        if (validField) {
-          sort = toSnake(validField.name);
-          direction = defaultSort.direction;
-        }
+      const sortedFieldName =
+        values.fields[defaultSort.fieldIndex]?.name?.trim();
+      const validField = normalizedFields.find(
+        field => field.name === sortedFieldName
+      );
+      if (validField) {
+        sort = toSnake(validField.name);
+        direction = defaultSort.direction;
       }
     }
 
@@ -299,7 +365,7 @@ export default function SchemaForm({
 
       {fields.map((field, index) => {
         const fieldType = watchedFields?.[index]?.type ?? FieldKind.STRING;
-        const isSorted = defaultSort?.fieldId === field.id;
+        const isSorted = defaultSort?.fieldIndex === index;
         const sortDirection = isSorted ? defaultSort.direction : null;
         const fieldName = watchedFields?.[index]?.name?.trim() || 'field';
 
@@ -344,8 +410,30 @@ export default function SchemaForm({
           });
 
         return (
-          <div className={styles.fieldGroup} key={field.id}>
+          <div
+            className={classNames(
+              styles.fieldGroup,
+              draggingIndex === index && styles.dragging
+            )}
+            key={field.id}
+            ref={element => {
+              fieldGroupRefs.current[index] = element;
+            }}
+            onDragOver={handleDragOver}
+            onDrop={event => handleDrop(index, event)}
+          >
             <div className={styles.fieldRow}>
+              <button
+                type="button"
+                className={styles.dragHandle}
+                draggable
+                aria-label="Reorder field"
+                title="Reorder field"
+                onDragStart={event => handleDragStart(index, event)}
+                onDragEnd={handleDragEnd}
+              >
+                <DragHandleIcon />
+              </button>
               <Input
                 placeholder="name"
                 {...register(`fields.${index}.name`, {
@@ -388,7 +476,7 @@ export default function SchemaForm({
                   styles.sortButton,
                   isSorted && styles.sortButtonActive
                 )}
-                onClick={() => handleToggleSort(field.id)}
+                onClick={() => handleToggleSort(index)}
                 aria-label={sortAriaLabel}
                 title={sortTooltip}
               >

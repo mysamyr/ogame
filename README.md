@@ -1,3 +1,3 @@
 # TODOs
 
-- [ ] notes pagination on UI
+- [ ] notes filtering on server
