@@ -74,6 +74,50 @@ const validateUniqueFields = (
   }
 };
 
+const validateRequiredFields = (
+  fields: Pick<SchemaField, 'required'>[],
+  ctx: z.RefinementCtx
+) => {
+  if (!fields.some(field => field.required)) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'There should be at least 1 required field',
+    });
+  }
+};
+
+const validateFieldsRestrictions = (
+  fields: Pick<SchemaField, 'type' | 'min' | 'max'>[],
+  ctx: z.RefinementCtx
+) => {
+  fields.forEach((field, index) => {
+    if (field.type === FieldKind.STRING) {
+      if (field.min !== null && field.min < 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Min cannot be negative for string fields',
+          path: ['fields', index, 'min'],
+        });
+      }
+      if (field.max !== null && field.max < 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Max cannot be negative for string fields',
+          path: ['fields', index, 'max'],
+        });
+      }
+    }
+
+    if (field.min !== null && field.max !== null && field.min > field.max) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Min cannot be greater than max for string fields',
+        path: ['fields', index, 'min'],
+      });
+    }
+  });
+};
+
 const validateImportedFieldConstraints = (
   field: Pick<SchemaField, 'type' | 'min' | 'max' | 'regexp'>,
   index: number,
@@ -146,7 +190,9 @@ const createUpdateSchemaPayload = z
       .min(1, 'At least one field is required'),
   })
   .superRefine((payload, ctx) => {
+    validateRequiredFields(payload.fields, ctx);
     validateUniqueFields(payload.fields, ctx);
+    validateFieldsRestrictions(payload.fields, ctx);
     validateSort(payload, ctx);
   });
 
@@ -169,7 +215,9 @@ export const schemaImportPayload = z
   })
   .strict()
   .superRefine((payload, ctx) => {
+    validateRequiredFields(payload.fields, ctx);
     validateUniqueFields(payload.fields, ctx);
+    validateFieldsRestrictions(payload.fields, ctx);
     validateSort(payload, ctx);
     for (const [index, field] of payload.fields.entries()) {
       validateImportedFieldConstraints(field, index, ctx);

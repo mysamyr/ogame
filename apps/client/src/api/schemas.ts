@@ -11,14 +11,6 @@ export async function fetchSchemas(): Promise<Schema[]> {
   return await api.get<Schema[]>('/api/schema');
 }
 
-export async function fetchSchemaById(
-  schemaId: SchemaParams['id']
-): Promise<Schema> {
-  return await api.get<Schema>(
-    `/api/schema/${encodeURIComponent(String(schemaId))}`
-  );
-}
-
 export async function createSchema(payload: SchemaPayload): Promise<Schema> {
   return await api.post<Schema>('/api/schema', payload);
 }

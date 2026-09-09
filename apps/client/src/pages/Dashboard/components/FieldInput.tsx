@@ -15,24 +15,14 @@ type Props = {
   field: SchemaField;
   placeholder?: string;
   rules?: RegisterOptions;
-  /**
-   * Surfaces validation before the user interacts with the field, used when
-   * editing a record that already violates the current schema.
-   */
-  showErrors?: boolean;
 };
 
-export default function FieldInput({
-  field,
-  placeholder,
-  rules,
-  showErrors = false,
-}: Props) {
+export default function FieldInput({ field, placeholder, rules }: Props) {
   const {
     register,
     setValue,
     watch,
-    formState: { errors, isSubmitted, touchedFields },
+    formState: { errors, touchedFields },
   } = useFormContext<Record<string, unknown>>();
 
   const kindToInputType: Partial<Record<string, string>> = {
@@ -42,8 +32,7 @@ export default function FieldInput({
   };
 
   const value = watch(field.id);
-  const isErrorVisible =
-    showErrors || isSubmitted || Boolean(touchedFields[field.id]);
+  const isErrorVisible = Boolean(touchedFields[field.id]);
   const parserError = isErrorVisible
     ? validateRecordAgainstSchema({ [field.id]: value }, [field]).errors[
         field.id

@@ -84,10 +84,16 @@ export default function NoteForm() {
 
   const methods = useForm<FormValues>({
     defaultValues: getDefaultValues(),
-    mode: 'onChange',
+    mode: 'onBlur',
   });
-  const { clearErrors, handleSubmit, reset, setError, setFocus, watch } =
-    methods;
+  const {
+    clearErrors,
+    handleSubmit,
+    reset,
+    setError,
+    setFocus,
+    watch,
+  } = methods;
   const values = watch();
   const recordValidation = validateRecordAgainstSchema(
     values,
@@ -203,11 +209,7 @@ export default function NoteForm() {
             >
               <div className={styles.fields}>
                 {activeSchema?.fields.map(field => (
-                  <FieldInput
-                    key={field.name}
-                    field={field}
-                    showErrors={Boolean(activeNote)}
-                  />
+                  <FieldInput key={field.name} field={field} />
                 ))}
               </div>
 

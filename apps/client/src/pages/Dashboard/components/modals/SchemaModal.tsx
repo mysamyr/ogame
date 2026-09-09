@@ -12,6 +12,7 @@ type Props = {
   submitText: string;
   initialSchema?: Schema;
   onSubmit: (payload: SchemaPayload) => void;
+  onError: (error: string) => void;
   onCancel: () => void;
 };
 
@@ -20,6 +21,7 @@ export default function SchemaModal({
   submitText,
   initialSchema,
   onSubmit,
+  onError,
   onCancel,
 }: Props): ReactElement {
   return (
@@ -30,6 +32,7 @@ export default function SchemaModal({
           initialSchema={initialSchema}
           submitText={submitText}
           onSubmit={onSubmit}
+          onError={onError}
           onCancel={onCancel}
         />
       </div>

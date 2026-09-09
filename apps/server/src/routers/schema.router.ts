@@ -63,21 +63,6 @@ export default function createSchemaRouter() {
   );
 
   /**
-   * GET /api/schema/:id
-   * Return a specific schema by ID.
-   */
-  router.get(
-    '/:id',
-    validateParams(schemaParamsPayload),
-    promisify<SchemaParams, Schema>(async (req, res) => {
-      const schema = await getSchemaById(req.params.id);
-      if (!schema) throw new NotFoundError('schema not found');
-
-      res.json(schema);
-    })
-  );
-
-  /**
    * POST /api/schema
    * Create a new schema.
    */

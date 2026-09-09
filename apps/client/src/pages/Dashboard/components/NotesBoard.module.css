@@ -16,3 +16,164 @@
   text-align: center;
   padding: 24px 0;
 }
+
+.tableContainer {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tableContainer::-webkit-scrollbar {
+  display: none;
+}
+
+.notesTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.notesTable th,
+.notesTable td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--table-border);
+  font-size: 13px;
+}
+
+.notesTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  color: var(--accent);
+  border-bottom: 2px solid var(--table-border);
+}
+
+.cellBoolean {
+  width: 80px;
+}
+
+.cellBoolean input {
+  transform: scale(1);
+  margin: 0;
+  vertical-align: middle;
+}
+
+.rowStatus {
+  width: 36px;
+  text-align: center !important;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.rowWarning {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--danger);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+
+.rowWarningIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.warningPill {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--white-8);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.warningPillIcon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.warningPillValue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tooltip {
+  display: none;
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  bottom: calc(100% + 6px);
+  width: max-content;
+  max-width: 240px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  text-align: left;
+  box-shadow: var(--card-shadow);
+  pointer-events: none;
+}
+
+.rowWarning:hover .tooltip,
+.rowWarning:focus-visible .tooltip,
+.warningPill:hover .tooltip,
+.warningPill:focus-visible .tooltip {
+  display: block;
+}
+
+.noteActions {
+  white-space: nowrap;
+  text-align: right !important;
+}
+
+.noteActions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  margin-left: 8px;
+  padding: 0;
+}
+
+.noteActions button.copy {
+  color: var(--violet-300);
+}
+
+.noteActions button.del {
+  color: var(--danger);
+}
+
+.actionIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding: 16px 0 8px;
+}

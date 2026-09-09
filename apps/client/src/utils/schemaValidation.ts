@@ -6,9 +6,9 @@ import {
 import type { SchemaField } from '@ogame/shared/types';
 import { createPatternFromConfig } from '@ogame/shared/utils';
 
-export type BooleanParseResult = { ok: true; value: boolean } | { ok: false };
+type BooleanParseResult = { ok: true; value: boolean } | { ok: false };
 
-export type RecordValidationResult = {
+type RecordValidationResult = {
   isValid: boolean;
   errors: Record<string, string>;
   typeMismatches: Record<string, boolean>;
@@ -355,6 +355,14 @@ export function validateRecordAgainstSchema(
   return result;
 }
 
+/**
+ * Coerces the values in a record to match the types defined in the schema fields.
+ * String/Date/Time will be the same.
+ * Number should be coerced to a number if possible. For NaN/''/null/undefined, it will be set to undefined.
+ *
+ * @param record The record to be coerced.
+ * @param fields The schema fields to use for coercion.
+ */
 export function coerceRecordToSchema(
   record: Record<string, unknown>,
   fields: SchemaField[]
@@ -370,6 +378,7 @@ export function coerceRecordToSchema(
       }
     } else if (field.type === FieldKind.NUMBER) {
       if (isMissingValue(value)) {
+        next[field.id] = undefined;
         continue;
       }
       const parsed = parseNumberValue(value);

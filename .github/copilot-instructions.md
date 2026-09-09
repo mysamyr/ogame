@@ -12,6 +12,8 @@
   enabled via `PRAGMA foreign_keys = ON`.
 - **Styling**: **CSS Modules** (`*.module.css`) and `/apps/client/public/style.css`. Utility CSS frameworks (e.g.,
   Tailwind) and inline CSS are strictly prohibited.
+- **Dashboard notes rendering**: `NotesBoard` owns the table rendering, sorting, pagination, and validation logic; `NotesTable`
+  is removed and its CSS was merged into `NotesBoard.module.css` to keep the dashboard view self-contained.
 - **Field / filter reorder UI**: Handle-only HTML5 drag-and-drop via `useFieldArray.move` (no DnD libraries). Grip
   lives left of the name control in `SchemaForm` and `FilterBuilderModal`; order is the `fields[]` / `rules[]`
   array index on submit/apply.

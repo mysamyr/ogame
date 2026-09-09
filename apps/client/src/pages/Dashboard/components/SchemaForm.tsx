@@ -1,20 +1,15 @@
-import {
-  type DragEvent,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type DragEvent, useEffect, useRef, useState } from 'react';
 
 import { FieldKind, NAME_REGEX, SortDirection } from '@ogame/shared/constants';
 import type { Schema, SchemaField } from '@ogame/shared/types';
 import { toSnake } from '@ogame/shared/utils';
-import type { SchemaPayload } from '@ogame/shared/validation';
+import { schemaPayload, SchemaPayload } from '@ogame/shared/validation';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import {
   DeleteIcon,
   DragHandleIcon,
-  FilterIcon,
+  GearIcon,
   SortAscIcon,
   SortDescIcon,
   SortNeutralIcon,
@@ -38,6 +33,7 @@ type Props = {
   initialSchema?: Schema;
   submitText: string;
   onSubmit: (payload: SchemaPayload) => void;
+  onError: (error: string) => void;
   onCancel: () => void;
 };
 
@@ -58,7 +54,7 @@ const FIELD_KIND_OPTIONS = Object.values(FieldKind).map(kind => ({
 const EMPTY_FIELD: Omit<SchemaField, 'id'> = {
   name: '',
   type: FieldKind.STRING,
-  required: false,
+  required: true,
   min: null,
   max: null,
   regexp: null,
@@ -115,6 +111,7 @@ export default function SchemaForm({
   initialSchema,
   submitText,
   onSubmit,
+  onError,
   onCancel,
 }: Props) {
   const methods = useForm<SchemaPayload>({
@@ -309,7 +306,12 @@ export default function SchemaForm({
   };
 
   const submit = (values: SchemaPayload) => {
-    const normalizedName = values.name.trim();
+    const payload = {
+      name: values.name.trim(),
+      sort: null,
+      direction: null,
+    } as SchemaPayload;
+
     const normalizedFields = values.fields
       .map(field => ({
         ...field,
@@ -318,8 +320,7 @@ export default function SchemaForm({
       }))
       .filter(field => Boolean(field.name));
 
-    let sort: string | null = null;
-    let direction: SortDirection | null = null;
+    payload.fields = normalizedFields;
 
     if (defaultSort) {
       const sortedFieldName =
@@ -328,17 +329,21 @@ export default function SchemaForm({
         field => field.name === sortedFieldName
       );
       if (validField) {
-        sort = toSnake(validField.name);
-        direction = defaultSort.direction;
+        payload.sort = toSnake(validField.name);
+        payload.direction = defaultSort.direction;
       }
     }
 
-    onSubmit({
-      name: normalizedName,
-      fields: normalizedFields,
-      sort,
-      direction,
-    });
+    const result = schemaPayload.safeParse(payload);
+
+    if (!result.success) {
+      // TODO: show errors
+      console.error(result.error);
+      onError(result.error.issues[0]?.message ?? 'Invalid schema file');
+      return;
+    }
+
+    onSubmit(payload);
   };
 
   return (
@@ -494,8 +499,7 @@ export default function SchemaForm({
                   aria-expanded={isValidationOpen}
                   title="Validation rules"
                 >
-                  <FilterIcon />
-                  Rules
+                  <GearIcon />
                 </Button>
               ) : (
                 <div />
@@ -593,7 +597,9 @@ export default function SchemaForm({
                         <label className={styles.validationField}>
                           Min
                           <Input
-                            type={fieldType === FieldKind.DATE ? 'date' : 'time'}
+                            type={
+                              fieldType === FieldKind.DATE ? 'date' : 'time'
+                            }
                             value={
                               fieldType === FieldKind.DATE
                                 ? numberToDateInputValue(currentMin)
@@ -612,7 +618,9 @@ export default function SchemaForm({
                         <label className={styles.validationField}>
                           Max
                           <Input
-                            type={fieldType === FieldKind.DATE ? 'date' : 'time'}
+                            type={
+                              fieldType === FieldKind.DATE ? 'date' : 'time'
+                            }
                             value={
                               fieldType === FieldKind.DATE
                                 ? numberToDateInputValue(currentMax)

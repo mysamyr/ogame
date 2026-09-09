@@ -23,7 +23,7 @@
 
 .fieldRow {
   display: grid;
-  grid-template-columns: 36px 1fr 140px 85px 36px 64px 36px;
+  grid-template-columns: 36px 1fr 140px 85px 36px 36px 36px;
   gap: 8px;
   align-items: center;
 }
@@ -49,11 +49,6 @@
 
 .dragHandle:active {
   cursor: grabbing;
-}
-
-.dragHandle svg {
-  width: 18px;
-  height: 18px;
 }
 
 .dragging {
@@ -118,10 +113,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  width: auto;
-  padding: 0 8px;
-  font-size: 12px;
+  gap: 0;
+  width: 36px;
+  min-width: 36px;
+  padding: 0;
+  font-size: 0;
   color: var(--muted);
   opacity: 0.6;
   transition:
@@ -129,11 +125,6 @@
     opacity 0.15s ease,
     border-color 0.15s ease,
     background-color 0.15s ease;
-}
-
-.validationButton svg {
-  width: 14px;
-  height: 14px;
 }
 
 .validationButton:hover,
