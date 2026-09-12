@@ -5,6 +5,7 @@ import { RegisterOptions, useFormContext } from 'react-hook-form';
 
 import { Checkbox, Input, RequiredMarker } from '../../../components/index.js';
 import {
+  getInputType,
   parseBooleanValue,
   validateRecordAgainstSchema,
 } from '../../../utils/index.js';
@@ -24,12 +25,6 @@ export default function FieldInput({ field, placeholder, rules }: Props) {
     watch,
     formState: { errors, touchedFields },
   } = useFormContext<Record<string, unknown>>();
-
-  const kindToInputType: Partial<Record<string, string>> = {
-    [FieldKind.NUMBER]: 'number',
-    [FieldKind.DATE]: 'date',
-    [FieldKind.TIME]: 'time',
-  };
 
   const value = watch(field.id);
   const isErrorVisible = Boolean(touchedFields[field.id]);
@@ -74,15 +69,13 @@ export default function FieldInput({ field, placeholder, rules }: Props) {
     );
   }
 
-  const inputType = kindToInputType[field.type] ?? 'text';
-
   return (
     <label className={styles.label}>
       {toCapital(field.name)}
       {field.required ? <RequiredMarker /> : ''}
       <Input
         className={styles.input}
-        type={inputType}
+        type={getInputType(field.type)}
         placeholder={placeholder}
         {...register(field.id, {
           required: field.required

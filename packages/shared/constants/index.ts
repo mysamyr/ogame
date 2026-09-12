@@ -18,6 +18,8 @@ export enum FilterOperator {
   NOT_CONTAINS = 'not_contains',
   LESS_THAN = '<',
   GREATER_THAN = '>',
+  GREATER_EQUAL_THAN = '>=',
+  LESS_EQUAL_THAN = '<=',
 }
 
 export enum SortDirection {

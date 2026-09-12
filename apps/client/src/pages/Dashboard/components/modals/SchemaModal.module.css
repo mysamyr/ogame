@@ -12,3 +12,207 @@
   display: grid;
   gap: 10px;
 }
+
+.row {
+  margin-bottom: 10px;
+}
+
+.row input {
+  margin-top: 6px;
+}
+
+.label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.fieldsHeader {
+  margin-bottom: 8px;
+}
+
+.fieldGroup {
+  margin-bottom: 8px;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 36px 1fr 140px 85px 36px 36px 36px;
+  gap: 8px;
+  align-items: center;
+}
+
+.dragHandle {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid var(--white-8);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: grab;
+}
+
+.dragHandle:hover,
+.dragHandle:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.dragging {
+  opacity: 0.5;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.error {
+  margin: 8px 0 0;
+  color: var(--danger);
+}
+
+.inputError,
+.inputError:focus,
+.inputError:active {
+  border-color: var(--danger) !important;
+}
+
+.sortButton {
+  color: var(--muted);
+  opacity: 0.6;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.sortButton:hover,
+.sortButton:focus-visible {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.sortButtonActive {
+  color: var(--accent);
+  border-color: var(--accent);
+  background-color: var(--white-8);
+  opacity: 1;
+}
+
+.sortButtonActive:hover,
+.sortButtonActive:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.removeButton {
+  color: var(--danger);
+}
+
+.removeButton:hover,
+.removeButton:focus-visible {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.validationButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 36px;
+  min-width: 36px;
+  padding: 0;
+  font-size: 0;
+  color: var(--muted);
+  opacity: 0.6;
+  transition:
+    color 0.15s ease,
+    opacity 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.validationButton:hover,
+.validationButton:focus-visible {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.validationButtonActive {
+  color: var(--accent);
+  border-color: var(--accent);
+  background-color: var(--white-8);
+  opacity: 1;
+}
+
+.validationButtonActive:hover,
+.validationButtonActive:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.validationAccordion {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.validationAccordion.validationAccordionOpen {
+  grid-template-rows: 1fr;
+  margin-top: 6px;
+}
+
+.validationInner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.validationRow {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px;
+  background-color: var(--white-8);
+  border-radius: 6px;
+}
+
+.validationField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.actions,
+.submitActions {
+  display: flex;
+  align-items: center;
+}
+
+.actions {
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.submitActions {
+  gap: 8px;
+}

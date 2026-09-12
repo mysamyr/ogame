@@ -1,8 +1,4 @@
-import {
-  type DragEvent,
-  useRef,
-  useState,
-} from 'react';
+import { type DragEvent, useRef, useState } from 'react';
 
 import {
   FieldKind,
@@ -12,11 +8,14 @@ import {
 import type { FilterRule } from '@ogame/shared/validation';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-import { DeleteIcon, DragHandleIcon } from '../../../../components/icons/index.js';
+import {
+  DeleteIcon,
+  DragHandleIcon,
+} from '../../../../components/icons/index.js';
 import { Button, Dropdown, Input } from '../../../../components/index.js';
 import { ButtonVariant } from '../../../../constants/index.js';
 import type { FilterColumn } from '../../../../types/index.js';
-import { classNames } from '../../../../utils/index.js';
+import { classNames, getInputType } from '../../../../utils/index.js';
 
 import styles from './FilterBuilderModal.module.css';
 
@@ -36,6 +35,14 @@ const OPERATOR_OPTIONS: { label: string; value: FilterOperator }[] = [
   { label: FilterOperator.NOT_EQUALS, value: FilterOperator.NOT_EQUALS },
   { label: FilterOperator.LESS_THAN, value: FilterOperator.LESS_THAN },
   { label: FilterOperator.GREATER_THAN, value: FilterOperator.GREATER_THAN },
+  {
+    label: FilterOperator.GREATER_EQUAL_THAN,
+    value: FilterOperator.GREATER_EQUAL_THAN,
+  },
+  {
+    label: FilterOperator.LESS_EQUAL_THAN,
+    value: FilterOperator.LESS_EQUAL_THAN,
+  },
 ];
 
 const STRING_OPERATOR_OPTIONS: { label: string; value: FilterOperator }[] = [
@@ -68,13 +75,6 @@ function createRule(columns: FilterColumn[]): FilterRule {
   };
 }
 
-function getInputType(type: FieldKind): 'date' | 'number' | 'text' | 'time' {
-  if (type === FieldKind.DATE) return 'date';
-  if (type === FieldKind.NUMBER) return 'number';
-  if (type === FieldKind.TIME) return 'time';
-  return 'text';
-}
-
 export default function FilterBuilderModal({
   columns,
   initialRules,
@@ -96,7 +96,10 @@ export default function FilterBuilderModal({
   const dragFromIndexRef = useRef<number | null>(null);
   const ruleRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const handleDragStart = (index: number, event: DragEvent<HTMLButtonElement>) => {
+  const handleDragStart = (
+    index: number,
+    event: DragEvent<HTMLButtonElement>
+  ) => {
     dragFromIndexRef.current = index;
     setDraggingIndex(index);
     event.dataTransfer.effectAllowed = 'move';

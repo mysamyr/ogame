@@ -14,8 +14,10 @@
   Tailwind) and inline CSS are strictly prohibited.
 - **Dashboard notes rendering**: `NotesBoard` owns the table rendering, sorting, pagination, and validation logic; `NotesTable`
   is removed and its CSS was merged into `NotesBoard.module.css` to keep the dashboard view self-contained.
+- **Schema modal composition**: `SchemaModal` owns the schema editor form logic and stylesheet, with the editor UI nested
+  inside the modal and shared styling moved into `SchemaModal.module.css` instead of a separate `SchemaForm` file.
 - **Field / filter reorder UI**: Handle-only HTML5 drag-and-drop via `useFieldArray.move` (no DnD libraries). Grip
-  lives left of the name control in `SchemaForm` and `FilterBuilderModal`; order is the `fields[]` / `rules[]`
+  lives left of the name control in `SchemaModal`'s nested editor and `FilterBuilderModal`; order is the `fields[]` / `rules[]`
   array index on submit/apply.
 - **Imports (ESM)**: Local imports **MUST** end in `.js` (e.g., `import x from './x.js'`) per
   `"moduleResolution": "NodeNext"`.

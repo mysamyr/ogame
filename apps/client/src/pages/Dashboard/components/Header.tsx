@@ -43,7 +43,6 @@ export default function Header() {
         title: 'Create schema',
         submitText: 'Create',
         onCancel: closeModal,
-        onError: showSnackbar,
         onSubmit: payload => {
           void (async () => {
             try {
@@ -72,7 +71,6 @@ export default function Header() {
         submitText: 'Save',
         initialSchema: activeSchema,
         onCancel: closeModal,
-        onError: showSnackbar,
         onSubmit: payload => {
           void (async () => {
             try {

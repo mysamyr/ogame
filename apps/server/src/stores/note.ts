@@ -88,16 +88,22 @@ function filterValueExpression(kind: FieldKind): string {
 
 function comparisonOperator(operator: FilterOperator): string {
   if (operator === FilterOperator.EQUALS) {
-    return '=';
+    return FilterOperator.EQUALS;
   }
   if (operator === FilterOperator.NOT_EQUALS) {
-    return '!=';
+    return FilterOperator.NOT_EQUALS;
   }
   if (operator === FilterOperator.LESS_THAN) {
-    return '<';
+    return FilterOperator.LESS_THAN;
   }
   if (operator === FilterOperator.GREATER_THAN) {
-    return '>';
+    return FilterOperator.GREATER_THAN;
+  }
+  if (operator === FilterOperator.GREATER_EQUAL_THAN) {
+    return FilterOperator.GREATER_EQUAL_THAN;
+  }
+  if (operator === FilterOperator.LESS_EQUAL_THAN) {
+    return FilterOperator.LESS_EQUAL_THAN;
   }
   throw new Error(`Unsupported comparison operator: ${operator}`);
 }

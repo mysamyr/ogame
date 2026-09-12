@@ -50,6 +50,8 @@ function isOperatorAllowed(kind: FieldKind, operator: FilterOperator): boolean {
     FilterOperator.GREATER_THAN,
     FilterOperator.LESS_THAN,
     FilterOperator.NOT_EQUALS,
+    FilterOperator.GREATER_EQUAL_THAN,
+    FilterOperator.LESS_EQUAL_THAN,
   ].includes(operator);
 }
 

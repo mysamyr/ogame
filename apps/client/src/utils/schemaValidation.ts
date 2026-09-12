@@ -6,8 +6,7 @@ import {
 import type { SchemaField } from '@ogame/shared/types';
 import { createPatternFromConfig } from '@ogame/shared/utils';
 
-type BooleanParseResult = { ok: true; value: boolean } | { ok: false };
-
+// TODO: refactor this piece of shit
 type RecordValidationResult = {
   isValid: boolean;
   errors: Record<string, string>;
@@ -38,7 +37,9 @@ export function formatUnknownValue(value: unknown): string {
   }
 }
 
-export function parseBooleanValue(value: unknown): BooleanParseResult {
+export function parseBooleanValue(
+  value: unknown
+): { ok: true; value: boolean } | { ok: false } {
   if (value === null || value === undefined) {
     return { ok: true, value: false };
   }
