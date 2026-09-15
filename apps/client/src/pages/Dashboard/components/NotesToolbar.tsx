@@ -1,4 +1,5 @@
 import {
+  DeleteIcon,
   ExportIcon,
   FilterIcon,
   ImportIcon,
@@ -10,6 +11,8 @@ import styles from './NotesToolbar.module.css';
 
 type Props = {
   activeFilterCount: number;
+  selectedCount?: number;
+  onDeleteSelected?: () => void;
   onExport?: () => void;
   onImport: () => void;
   onOpenFilters?: () => void;
@@ -17,12 +20,26 @@ type Props = {
 
 export default function NotesToolbar({
   activeFilterCount,
+  selectedCount = 0,
+  onDeleteSelected,
   onExport,
   onImport,
   onOpenFilters,
 }: Props) {
   return (
     <div className={styles.toolbar}>
+      {selectedCount > 0 && onDeleteSelected ? (
+        <Button
+          variant={ButtonVariant.ICON}
+          className={styles.badgeButton}
+          onClick={onDeleteSelected}
+          aria-label={`Delete selected (${selectedCount})`}
+          title="Delete selected"
+        >
+          <DeleteIcon />
+          <span className={styles.badgeDanger}>{selectedCount}</span>
+        </Button>
+      ) : null}
       <Button
         variant={ButtonVariant.ICON}
         onClick={onImport}
@@ -44,7 +61,7 @@ export default function NotesToolbar({
       {onOpenFilters ? (
         <Button
           variant={ButtonVariant.ICON}
-          className={styles.filterButton}
+          className={styles.badgeButton}
           onClick={onOpenFilters}
           aria-label="Open filters"
           title="Open filters"

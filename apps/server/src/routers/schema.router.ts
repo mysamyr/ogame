@@ -53,11 +53,11 @@ export default function createSchemaRouter() {
       const schema = await getSchemaById(req.params.id);
       if (!schema) throw new NotFoundError('schema not found');
 
-      const notes = await getNotes(schema.id);
+      const notesPage = await getNotes(schema.id);
 
       res.json({
         ...schema,
-        notes,
+        notes: notesPage.items,
       });
     })
   );

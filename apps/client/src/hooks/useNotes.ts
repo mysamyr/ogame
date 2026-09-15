@@ -13,6 +13,7 @@ export function useNotes() {
       addNote: s.addNote,
       updateNote: s.updateNote,
       removeNote: s.removeNote,
+      removeNotes: s.removeNotes,
     }))
   );
 }

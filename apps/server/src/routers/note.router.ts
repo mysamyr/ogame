@@ -1,13 +1,15 @@
 import { FieldKind, FilterOperator } from '@ogame/shared/constants';
 import { NotFoundError, ValidationError } from '@ogame/shared/errors';
-import { Note } from '@ogame/shared/types';
+import { Note, NotesPage } from '@ogame/shared/types';
 import {
   notePayload,
   noteParamsPayload,
   schemaParamsPayload,
   validateNoteBySchema,
   getNotesQueryPayload,
+  deleteNotesQueryPayload,
   type GetNotesQuery,
+  type DeleteNotesQuery,
   type NoteParams,
   type NotePayload,
 } from '@ogame/shared/validation';
@@ -21,7 +23,7 @@ import {
 } from '../middlewares/validation.js';
 import {
   addNote,
-  deleteNote,
+  deleteNotes,
   getNoteById,
   getNotes,
   upsertNote,
@@ -67,56 +69,60 @@ export default function createNoteRouter() {
     '/:id',
     validateParams(schemaParamsPayload),
     validateQuery(getNotesQueryPayload),
-    promisify<NoteParams, Note[], unknown, GetNotesQuery>(async (req, res) => {
-      const schemaId = req.params.id;
-      const query = getNotesQueryPayload.parse(req.query);
-      const { direction, filters = [], limit, offset, sort } = query;
+    promisify<NoteParams, NotesPage, unknown, GetNotesQuery>(
+      async (req, res) => {
+        const schemaId = req.params.id;
+        const query = getNotesQueryPayload.parse(req.query);
+        const { direction, filters = [], limit, offset, sort } = query;
 
-      let sortKind: FieldKind | undefined;
-      let resolvedFilters: ResolvedFilterRule[] = [];
-      if (sort || filters.length > 0) {
-        const schemaRecord = await getSchemaById(schemaId);
-        if (!schemaRecord) {
-          throw new NotFoundError('schema not found');
+        let sortKind: FieldKind | undefined;
+        let resolvedFilters: ResolvedFilterRule[] = [];
+        if (sort || filters.length > 0) {
+          const schemaRecord = await getSchemaById(schemaId);
+          if (!schemaRecord) {
+            throw new NotFoundError('schema not found');
+          }
+
+          if (sort) {
+            const field = schemaRecord.fields.find(item => item.id === sort);
+            if (!field) {
+              throw new ValidationError(
+                `Sort field "${sort}" must exist in schema fields`
+              );
+            }
+            sortKind = field.type;
+          }
+
+          resolvedFilters = filters.map(rule => {
+            const field = schemaRecord.fields.find(
+              item => item.id === rule.column
+            );
+            if (!field) {
+              throw new ValidationError(
+                `Filter field "${rule.column}" must exist in schema fields`
+              );
+            }
+            if (!isOperatorAllowed(field.type, rule.operator)) {
+              throw new ValidationError(
+                `Filter operator "${rule.operator}" is not valid for field "${rule.column}"`
+              );
+            }
+            return { ...rule, kind: field.type };
+          });
         }
 
-        if (sort) {
-          const field = schemaRecord.fields.find(item => item.id === sort);
-          if (!field) {
-            throw new ValidationError(
-              `Sort field "${sort}" must exist in schema fields`
-            );
-          }
-          sortKind = field.type;
-        }
-
-        resolvedFilters = filters.map(rule => {
-          const field = schemaRecord.fields.find(
-            item => item.id === rule.column
-          );
-          if (!field) {
-            throw new ValidationError(
-              `Filter field "${rule.column}" must exist in schema fields`
-            );
-          }
-          if (!isOperatorAllowed(field.type, rule.operator)) {
-            throw new ValidationError(
-              `Filter operator "${rule.operator}" is not valid for field "${rule.column}"`
-            );
-          }
-          return { ...rule, kind: field.type };
+        const notesPage = await getNotes(schemaId, {
+          ...(limit !== undefined ? { limit } : {}),
+          ...(offset !== undefined ? { offset } : {}),
+          ...(sort && direction && sortKind
+            ? { sort, direction, sortKind }
+            : {}),
+          ...(resolvedFilters.length > 0 ? { filters: resolvedFilters } : {}),
         });
+
+        res.json(notesPage);
       }
-
-      const notes = await getNotes(schemaId, {
-        ...(limit !== undefined ? { limit } : {}),
-        ...(offset !== undefined ? { offset } : {}),
-        ...(sort && direction && sortKind ? { sort, direction, sortKind } : {}),
-        ...(resolvedFilters.length > 0 ? { filters: resolvedFilters } : {}),
-      });
-
-      res.json(notes);
-    })
+    )
   );
 
   /**
@@ -177,6 +183,27 @@ export default function createNoteRouter() {
   );
 
   /**
+   * DELETE /api/note?ids=id1,id2,id3
+   * Delete existing notes by IDs.
+   */
+  router.delete(
+    '/',
+    validateQuery(deleteNotesQueryPayload),
+    promisify<unknown, void, unknown, DeleteNotesQuery>(async (req, res) => {
+      const { ids } = deleteNotesQueryPayload.parse(req.query);
+      for (const id of ids) {
+        const existing = await getNoteById(id);
+        if (!existing) {
+          throw new NotFoundError('note not found');
+        }
+      }
+      await deleteNotes(ids);
+
+      res.sendStatus(204);
+    })
+  );
+
+  /**
    * DELETE /api/note/:id
    * Delete an existing note by ID.
    */
@@ -188,7 +215,7 @@ export default function createNoteRouter() {
       if (!existing) {
         throw new NotFoundError('note not found');
       }
-      await deleteNote(req.params.id);
+      await deleteNotes([req.params.id]);
 
       res.sendStatus(204);
     })

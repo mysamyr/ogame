@@ -4,6 +4,11 @@
   align-items: center;
 }
 
+.notesCount {
+  font-size: 13px;
+  color: var(--accent);
+}
+
 .noteMeta {
   font-size: 13px;
   color: var(--muted);
@@ -53,6 +58,11 @@
   border-bottom: 2px solid var(--table-border);
 }
 
+.sortableHeader {
+  cursor: pointer;
+  user-select: none;
+}
+
 .cellBoolean {
   width: 80px;
 }
@@ -64,6 +74,13 @@
 }
 
 .rowStatus {
+  width: 36px;
+  text-align: center !important;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.select {
   width: 36px;
   text-align: center !important;
   padding-left: 6px;

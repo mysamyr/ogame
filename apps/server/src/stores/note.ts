@@ -4,7 +4,7 @@ import {
   FilterOperator,
   SortDirection,
 } from '@ogame/shared/constants';
-import type { Note } from '@ogame/shared/types';
+import type { Note, NotesPage } from '@ogame/shared/types';
 import type { FilterRule, GetNotesQuery } from '@ogame/shared/validation';
 
 import { get, list, run } from '../services/db.js';
@@ -21,6 +21,10 @@ type NoteRecord = {
 type FieldTypeRecord = {
   id: string;
   type: FieldKind;
+};
+
+type CountRecord = {
+  total: number;
 };
 
 export type ResolvedFilterRule = FilterRule & {
@@ -240,33 +244,38 @@ async function replaceNoteValues(
 export async function getNotes(
   schemaId: string,
   config?: GetNotesConfig
-): Promise<Note[]> {
+): Promise<NotesPage> {
   const where: string[] = [];
-  const params: unknown[] = [];
+  const queryParams: unknown[] = [];
+  const countParams: unknown[] = [];
 
   let sortJoin = '';
   if (config?.sort && config.direction && config.sortKind) {
     sortJoin =
       ' LEFT JOIN note_values sv ON sv.note_id = n.id AND sv.field_id = ?';
-    params.push(config.sort);
+    queryParams.push(config.sort);
   }
 
   where.push('n.schema = ?');
-  params.push(schemaId);
+  queryParams.push(schemaId);
+  countParams.push(schemaId);
 
-  const filters = config?.filters ? filterClause(config.filters, params) : null;
+  const filters = config?.filters
+    ? filterClause(config.filters, queryParams)
+    : null;
   if (filters) {
     where.push(filters);
+    filterClause(config!.filters ?? [], countParams);
   }
 
   const whereClause = where.length > 0 ? ` WHERE ${where.join(' AND ')}` : '';
   let paginationClause = '';
   if (config?.limit) {
     paginationClause = ' LIMIT ?';
-    params.push(config.limit);
+    queryParams.push(config.limit);
     if (config.offset != null) {
       paginationClause += ' OFFSET ?';
-      params.push(config.offset);
+      queryParams.push(config.offset);
     }
   }
 
@@ -283,10 +292,22 @@ export async function getNotes(
     GROUP BY n.id, n.schema
     ${orderByClause(config)}
     ${paginationClause}`,
-    params
+    queryParams
   );
 
-  return rows.map(parseNote);
+  const countRow = await get<CountRecord>(
+    `SELECT COUNT(*) AS total
+    FROM notes n
+    ${whereClause}`,
+    countParams
+  );
+
+  return {
+    items: rows.map(parseNote),
+    total: countRow?.total ?? 0,
+    limit: config?.limit ?? null,
+    offset: config?.offset ?? 0,
+  };
 }
 
 export async function getNoteById(id: string): Promise<Note | null> {
@@ -325,6 +346,10 @@ export async function upsertNote(note: Note): Promise<void> {
   });
 }
 
-export async function deleteNote(id: string): Promise<void> {
-  await run('DELETE FROM notes WHERE id = ?', [id]);
+export async function deleteNotes(ids: string[]): Promise<void> {
+  if (ids.length === 0) {
+    return;
+  }
+  const placeholders = ids.map(() => '?').join(', ');
+  await run(`DELETE FROM notes WHERE id IN (${placeholders})`, ids);
 }

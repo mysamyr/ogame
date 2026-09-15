@@ -1,4 +1,3 @@
 # TODOs
 
-- [ ] datetime type. datetime-local input
-- [ ] select checkboxes for mass deleting
+- [ ] API in memory cache for total records

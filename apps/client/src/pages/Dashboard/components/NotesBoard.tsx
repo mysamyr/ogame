@@ -6,19 +6,20 @@ import {
   ISO_TIME_PATTERN,
   SortDirection,
 } from '@ogame/shared/constants';
-import type { Note, SchemaField } from '@ogame/shared/types';
+import type { Note, NotesPage, SchemaField } from '@ogame/shared/types';
 import { toCapital } from '@ogame/shared/utils';
 import type { FilterRule, SchemaImportPayload } from '@ogame/shared/validation';
 import {
   createColumnHelper,
   createCoreRowModel,
   flexRender,
+  rowSelectionFeature,
   tableFeatures,
   useTable,
 } from '@tanstack/react-table';
 import { useSearchParams } from 'react-router-dom';
 
-import { copyNote, deleteNote, fetchNotes } from '../../../api/notes.js';
+import { copyNote, deleteNotes, fetchNotes } from '../../../api/notes.js';
 import {
   exportSchema,
   fetchSchemas,
@@ -58,6 +59,7 @@ type NotesSortState = {
 
 const features = tableFeatures({
   coreRowModel: createCoreRowModel(),
+  rowSelectionFeature,
 });
 const columnHelper = createColumnHelper<typeof features, Note>();
 
@@ -71,6 +73,14 @@ function sortQuery(sortState: NotesSortState) {
     return {};
   }
   return { sort: sortState.sort, direction: sortState.direction };
+}
+
+function requestedNotesLimit(loadedCount: number) {
+  return Math.max(loadedCount, NOTES_PAGE_SIZE);
+}
+
+function hasMoreNotes(page: NotesPage) {
+  return page.offset + page.items.length < page.total;
 }
 
 function RowStatusCell({
@@ -224,8 +234,15 @@ function DateTimeCell({
 }
 
 export default function NotesBoard() {
-  const { notes, setNotes, appendNotes, setActiveNote, addNote, removeNote } =
-    useNotes();
+  const {
+    notes,
+    setNotes,
+    appendNotes,
+    setActiveNote,
+    addNote,
+    removeNote,
+    removeNotes,
+  } = useNotes();
   const { getActiveSchema, setSchemas } = useSchemas();
   const { showModal, closeModal } = useModal();
   const { showSnackbar } = useSnackbar();
@@ -235,6 +252,7 @@ export default function NotesBoard() {
   const [nextOffset, setNextOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [totalNotes, setTotalNotes] = useState(0);
   const loadRequestIdRef = useRef(0);
 
   const selectedType = searchParams.get('type') ?? '';
@@ -254,13 +272,14 @@ export default function NotesBoard() {
     async (
       schemaId: string,
       sortState: NotesSortState,
-      filters: FilterRule[]
+      filters: FilterRule[],
+      limit = NOTES_PAGE_SIZE
     ) => {
       const requestId = ++loadRequestIdRef.current;
       setIsLoading(true);
       try {
         const page = await fetchNotes(schemaId, {
-          limit: NOTES_PAGE_SIZE,
+          limit,
           offset: 0,
           ...sortQuery(sortState),
           ...(filters.length > 0 ? { filters } : {}),
@@ -268,9 +287,10 @@ export default function NotesBoard() {
         if (requestId !== loadRequestIdRef.current) {
           return;
         }
-        setNotes(page);
-        setNextOffset(NOTES_PAGE_SIZE);
-        setHasMore(page.length === NOTES_PAGE_SIZE);
+        setNotes(page.items);
+        setNextOffset(page.offset + page.items.length);
+        setHasMore(hasMoreNotes(page));
+        setTotalNotes(page.total);
       } catch {
         if (requestId !== loadRequestIdRef.current) {
           return;
@@ -278,6 +298,7 @@ export default function NotesBoard() {
         setNotes([]);
         setNextOffset(0);
         setHasMore(false);
+        setTotalNotes(0);
         showSnackbar('Failed to fetch notes');
       } finally {
         if (requestId === loadRequestIdRef.current) {
@@ -293,6 +314,7 @@ export default function NotesBoard() {
     setNotes([]);
     setNextOffset(0);
     setHasMore(false);
+    setTotalNotes(0);
     if (!selectedType) {
       setNotesSort(null);
       return;
@@ -329,9 +351,10 @@ export default function NotesBoard() {
       if (requestId !== loadRequestIdRef.current) {
         return;
       }
-      appendNotes(page);
-      setNextOffset(offset + NOTES_PAGE_SIZE);
-      setHasMore(page.length === NOTES_PAGE_SIZE);
+      appendNotes(page.items);
+      setNextOffset(page.offset + page.items.length);
+      setHasMore(hasMoreNotes(page));
+      setTotalNotes(page.total);
     } catch {
       if (requestId !== loadRequestIdRef.current) {
         return;
@@ -353,7 +376,12 @@ export default function NotesBoard() {
     }
     const nextSort = sort && direction ? { sort, direction } : null;
     setNotesSort(nextSort);
-    void loadFirstPage(selectedType, nextSort, filterRules);
+    void loadFirstPage(
+      selectedType,
+      nextSort,
+      filterRules,
+      requestedNotesLimit(notes.length)
+    );
   };
 
   const handleEdit = (note: Note) => {
@@ -385,7 +413,7 @@ export default function NotesBoard() {
           void (async () => {
             closeModal();
             try {
-              await deleteNote(noteIdValue);
+              await deleteNotes([noteIdValue]);
               removeNote(noteIdValue);
               showSnackbar('Deleted');
             } catch {
@@ -406,7 +434,12 @@ export default function NotesBoard() {
         onApply: (rules: FilterRule[]) => {
           setFilterRules(rules);
           if (selectedType) {
-            void loadFirstPage(selectedType, notesSort, rules);
+            void loadFirstPage(
+              selectedType,
+              notesSort,
+              rules,
+              requestedNotesLimit(notes.length)
+            );
           }
         },
         onCancel: closeModal,
@@ -513,6 +546,32 @@ export default function NotesBoard() {
   const columns = useMemo(() => {
     const fields: SchemaField[] = schema?.fields ?? [];
 
+    const selectColumn = columnHelper.display({
+      id: 'select',
+      header: ({ table }) => (
+        <span
+          onClick={event => {
+            event.stopPropagation();
+          }}
+        >
+          <Checkbox
+            aria-label="Select all notes"
+            checked={table.getIsAllPageRowsSelected()}
+            indeterminate={table.getIsSomePageRowsSelected()}
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+          />
+        </span>
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          aria-label="Select note"
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onChange={row.getToggleSelectedHandler()}
+        />
+      ),
+    });
+
     const statusColumn = columnHelper.display({
       id: 'rowStatus',
       header: '',
@@ -546,6 +605,7 @@ export default function NotesBoard() {
     });
 
     return [
+      selectColumn,
       statusColumn,
       ...dynamicColumns,
       columnHelper.display({
@@ -591,14 +651,53 @@ export default function NotesBoard() {
     features,
     columns,
     data: displayedNotes,
+    getRowId: row => row.id,
   });
+
+  const selectedCount = table.getSelectedRowModel().rows.length;
+
+  const handleDeleteSelected = () => {
+    const ids = table.getSelectedRowModel().rows.map(row => row.original.id);
+    if (ids.length === 0) {
+      return;
+    }
+    showModal({
+      component: ConfirmModal,
+      props: {
+        title: 'Delete notes',
+        message: `Delete ${ids.length} selected note${ids.length === 1 ? '' : 's'}?`,
+        confirmText: 'Delete',
+        confirmVariant: ButtonVariant.DANGER,
+        onCancel: closeModal,
+        onConfirm: () => {
+          void (async () => {
+            closeModal();
+            try {
+              await deleteNotes(ids);
+              removeNotes(ids);
+              table.resetRowSelection();
+              showSnackbar('Deleted');
+            } catch {
+              showSnackbar('Delete failed');
+            }
+          })();
+        },
+      },
+    });
+  };
 
   return (
     <>
       <div className={styles.header}>
-        <h2>Notes</h2>
+        <h2>
+          Notes <span className={styles.notesCount}>{notes.length}/{totalNotes}</span>
+        </h2>
         <NotesToolbar
           activeFilterCount={filterRules.length}
+          selectedCount={selectedCount}
+          onDeleteSelected={
+            selectedCount > 0 ? handleDeleteSelected : undefined
+          }
           onExport={activeSchema ? handleOpenExport : undefined}
           onImport={handleOpenImport}
           onOpenFilters={activeSchema ? handleOpenFilters : undefined}
@@ -617,7 +716,9 @@ export default function NotesBoard() {
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map(header => {
                       const canSort =
-                        header.id !== 'actions' && header.id !== 'rowStatus';
+                        header.id !== 'actions' &&
+                        header.id !== 'rowStatus' &&
+                        header.id !== 'select';
                       const sorted =
                         notesSort?.sort === header.id && notesSort.direction
                           ? notesSort.direction
@@ -630,12 +731,11 @@ export default function NotesBoard() {
                               ? styles.noteActions
                               : header.id === 'rowStatus'
                                 ? styles.rowStatus
-                                : ''
-                          }
-                          style={
-                            canSort
-                              ? { cursor: 'pointer', userSelect: 'none' }
-                              : undefined
+                                : header.id === 'select'
+                                  ? styles.select
+                                  : canSort
+                                    ? styles.sortableHeader
+                                    : ''
                           }
                           onClick={() => handleHeaderClick(header.id, canSort)}
                         >
@@ -657,7 +757,11 @@ export default function NotesBoard() {
                       <td
                         key={cell.id}
                         className={
-                          cell.column.id === 'rowStatus' ? styles.rowStatus : ''
+                          cell.column.id === 'rowStatus'
+                            ? styles.rowStatus
+                            : cell.column.id === 'select'
+                              ? styles.select
+                              : ''
                         }
                       >
                         {flexRender(

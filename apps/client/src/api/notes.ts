@@ -1,4 +1,4 @@
-import { Note } from '@ogame/shared/types';
+import { Note, NotesPage } from '@ogame/shared/types';
 import {
   GetNotesQuery,
   NoteParams,
@@ -10,7 +10,7 @@ import api from './index.js';
 export async function fetchNotes(
   schemaId: string,
   query?: GetNotesQuery
-): Promise<Note[]> {
+): Promise<NotesPage> {
   const params = new URLSearchParams();
   if (query?.limit != null) {
     params.set('limit', String(query.limit));
@@ -28,7 +28,7 @@ export async function fetchNotes(
     params.set('filters', JSON.stringify(query.filters));
   }
   const search = params.toString();
-  return await api.get<Note[]>(
+  return await api.get<NotesPage>(
     `/api/note/${encodeURIComponent(schemaId)}${search ? `?${search}` : ''}`
   );
 }
@@ -48,6 +48,7 @@ export async function updateNote(
   return await api.put(`/api/note/${encodeURIComponent(String(noteId))}`, note);
 }
 
-export async function deleteNote(noteId: NoteParams['id']): Promise<void> {
-  return await api.delete(`/api/note/${encodeURIComponent(String(noteId))}`);
+export async function deleteNotes(noteIds: NoteParams['id'][]): Promise<void> {
+  const ids = noteIds.map(id => String(id)).join(',');
+  return await api.delete(`/api/note?ids=${encodeURIComponent(ids)}`);
 }

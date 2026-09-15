@@ -83,6 +83,29 @@ export const noteParamsPayload = z.object({
   id: noteId,
 });
 
+export const deleteNotesQueryPayload = z.object({
+  ids: z
+    .string()
+    .trim()
+    .min(1, 'Ids are required')
+    .transform((value, ctx) => {
+      const ids = value
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
+      const parsed = z.array(noteId).min(1, 'Ids are required').safeParse(ids);
+      if (!parsed.success) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'Ids must be a comma-separated list of valid note identifiers',
+        });
+        return z.NEVER;
+      }
+      return parsed.data;
+    }),
+});
+
 export const notePayload = z.object({
   schema: z.string().describe('Schema id'),
   // other fields from selected schema
@@ -153,6 +176,7 @@ export function validateNoteBySchema(
 }
 
 export type GetNotesQuery = z.infer<typeof getNotesQueryPayload>;
+export type DeleteNotesQuery = z.infer<typeof deleteNotesQueryPayload>;
 export type FilterRule = z.infer<typeof filterRulePayload>;
 export type NoteParams = z.infer<typeof noteParamsPayload>;
 export type NotePayload = z.infer<typeof notePayload>;

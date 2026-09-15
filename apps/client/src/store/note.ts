@@ -12,9 +12,10 @@ interface NotesSlice {
   addNote: (note: Note) => void;
   updateNote: (id: NoteParams['id'], note: Note) => void;
   removeNote: (id: NoteParams['id']) => void;
+  removeNotes: (ids: NoteParams['id'][]) => void;
 }
 
-export const useNotesStore = create<NotesSlice>(set => ({
+export const useNotesStore = create<NotesSlice>((set, get) => ({
   notes: [],
   setNotes: n => set({ notes: n }),
   appendNotes: notes =>
@@ -33,6 +34,15 @@ export const useNotesStore = create<NotesSlice>(set => ({
     set(state => ({
       notes: state.notes.map(n => (n.id === id ? { ...note, id } : n)),
     })),
-  removeNote: id =>
-    set(state => ({ notes: state.notes.filter(n => n.id !== id) })),
+  removeNotes: ids =>
+    set(state => {
+      const idSet = new Set(ids.map(id => String(id)));
+      const notes = state.notes.filter(n => !idSet.has(n.id));
+      const activeNote =
+        state.activeNote && idSet.has(state.activeNote.id)
+          ? null
+          : state.activeNote;
+      return { notes, activeNote };
+    }),
+  removeNote: id => get().removeNotes([id]),
 }));
