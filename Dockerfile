@@ -1,33 +1,53 @@
-FROM node:24-bookworm-slim AS build
+# syntax=docker/dockerfile:1
+
+FROM node:24-bookworm-slim AS base
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-COPY apps ./apps
-COPY packages ./packages
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 
-RUN npm ci
+FROM base AS manifests
+
+COPY package.json package-lock.json ./
+COPY apps/server/package.json apps/server/package.json
+COPY apps/client/package.json apps/client/package.json
+COPY packages/shared/package.json packages/shared/package.json
+# Drops the root "prepare" script so husky is never invoked inside the image.
+RUN npm pkg delete scripts.prepare
+
+FROM manifests AS deps
+
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
+
+FROM manifests AS prod-deps
+
+# Install scripts stay enabled: sqlite3 needs them to fetch its native binding.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --omit=dev
+
+FROM base AS builder
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
 RUN npm run build
 
-FROM node:24-bookworm-slim AS runtime
+FROM base AS runtime
 
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DB_PATH=/app/data/store.db
 
-WORKDIR /app
+COPY --from=manifests /app/package.json ./package.json
+COPY --from=manifests /app/apps/server/package.json ./apps/server/package.json
+COPY --from=manifests /app/apps/client/package.json ./apps/client/package.json
+COPY --from=manifests /app/packages/shared/package.json ./packages/shared/package.json
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
+COPY --from=builder /app/apps/server/dist ./apps/server/dist
+COPY --from=builder /app/apps/client/dist ./apps/client/dist
 
-COPY package.json package-lock.json ./
-COPY apps/server/package.json ./apps/server/package.json
-COPY apps/client/package.json ./apps/client/package.json
-COPY packages/shared/package.json ./packages/shared/package.json
-RUN npm ci --omit=dev
-
-COPY --from=build /app/apps/server/dist ./apps/server/dist
-COPY --from=build /app/apps/client/dist ./apps/client/dist
-COPY --from=build /app/packages/shared/dist ./packages/shared/dist
-
-RUN mkdir /app/data && chown -R node:node /app
+RUN mkdir -p /app/data && chown -R node:node /app/data
 USER node
 
 EXPOSE 3000
