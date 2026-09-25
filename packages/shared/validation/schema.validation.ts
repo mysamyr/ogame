@@ -8,8 +8,6 @@ import {
 } from '../constants/index.js';
 import type { Schema, SchemaField } from '../types/schema.js';
 
-import { noteId } from './note.validation.js';
-
 export const schemaId = z
   .string()
   .trim()
@@ -200,18 +198,12 @@ export const schemaPayload = createUpdateSchemaPayload;
 
 export const schemaImportPayload = z
   .object({
-    id: schemaId,
     name,
     ...schemaSortShape,
     fields: z
       .array(schemaImportFieldPayload)
       .min(1, 'At least one field is required'),
-    notes: z.array(
-      z.looseObject({
-        id: noteId,
-        schema: schemaId,
-      })
-    ),
+    notes: z.array(z.looseObject({})),
   })
   .strict()
   .superRefine((payload, ctx) => {
@@ -232,16 +224,6 @@ export const schemaImportPayload = z
         message: `Sort field "${payload.sort}" must exist in schema fields`,
         path: ['sort'],
       });
-    }
-
-    for (const [index, note] of payload.notes.entries()) {
-      if (note.schema !== payload.id) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `Note schema must match imported schema id "${payload.id}"`,
-          path: ['notes', index, 'schema'],
-        });
-      }
     }
   });
 

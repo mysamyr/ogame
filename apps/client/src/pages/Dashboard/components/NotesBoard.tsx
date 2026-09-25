@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   FieldKind,
@@ -83,7 +83,7 @@ function hasMoreNotes(page: NotesPage) {
   return page.offset + page.items.length < page.total;
 }
 
-function RowStatusCell({
+const RowStatusCell = memo(function RowStatusCell({
   note,
   fields,
 }: {
@@ -110,9 +110,9 @@ function RowStatusCell({
       </span>
     </button>
   );
-}
+});
 
-function WarningValueCell({
+const WarningValueCell = memo(function WarningValueCell({
   displayValue,
   tooltip,
 }: {
@@ -128,9 +128,9 @@ function WarningValueCell({
       </span>
     </span>
   );
-}
+});
 
-function BooleanCell({ value }: { value: unknown }) {
+const BooleanCell = memo(function BooleanCell({ value }: { value: unknown }) {
   const parsed = parseBooleanValue(value);
   if (parsed.ok) {
     return (
@@ -147,9 +147,9 @@ function BooleanCell({ value }: { value: unknown }) {
   const tooltip = `Value '${formatUnknownValue(value)}' is not a valid boolean`;
 
   return <WarningValueCell displayValue={displayValue} tooltip={tooltip} />;
-}
+});
 
-function NumberCell({ value }: { value: unknown }) {
+const NumberCell = memo(function NumberCell({ value }: { value: unknown }) {
   const parsed =
     typeof value === 'number'
       ? value
@@ -175,9 +175,9 @@ function NumberCell({ value }: { value: unknown }) {
       tooltip={`Value '${formatUnknownValue(value)}' is not a valid number`}
     />
   );
-}
+});
 
-function DateTimeCell({
+const DateTimeCell = memo(function DateTimeCell({
   value,
   kind,
 }: {
@@ -231,22 +231,38 @@ function DateTimeCell({
       tooltip={`Value '${value}' is not a valid ${kind === FieldKind.DATE ? 'date in YYYY-MM-DD format' : 'time in HH:mm format'}`}
     />
   );
-}
+});
 
 export default function NotesBoard() {
+  const [searchParams] = useSearchParams();
+  const selectedType = searchParams.get('type') ?? '';
   const {
-    notes,
-    setNotes,
-    appendNotes,
-    setActiveNote,
     addNote,
+    appendNotes,
+    notes,
     removeNote,
     removeNotes,
-  } = useNotes();
-  const { getActiveSchema, setSchemas } = useSchemas();
-  const { showModal, closeModal } = useModal();
-  const { showSnackbar } = useSnackbar();
-  const [searchParams] = useSearchParams();
+    setActiveNote,
+    setNotes,
+  } = useNotes(state => ({
+    addNote: state.addNote,
+    appendNotes: state.appendNotes,
+    notes: state.notes,
+    removeNote: state.removeNote,
+    removeNotes: state.removeNotes,
+    setActiveNote: state.setActiveNote,
+    setNotes: state.setNotes,
+  }));
+  const { activeSchema, setSchemas } = useSchemas(state => ({
+    activeSchema:
+      state.schemas.find(schema => schema.id === selectedType) ?? null,
+    setSchemas: state.setSchemas,
+  }));
+  const { closeModal, showModal } = useModal(state => ({
+    closeModal: state.closeModal,
+    showModal: state.showModal,
+  }));
+  const showSnackbar = useSnackbar(state => state.showSnackbar);
   const [filterRules, setFilterRules] = useState<FilterRule[]>([]);
   const [notesSort, setNotesSort] = useState<NotesSortState>(null);
   const [nextOffset, setNextOffset] = useState(0);
@@ -254,9 +270,6 @@ export default function NotesBoard() {
   const [isLoading, setIsLoading] = useState(false);
   const [totalNotes, setTotalNotes] = useState(0);
   const loadRequestIdRef = useRef(0);
-
-  const selectedType = searchParams.get('type') ?? '';
-  const activeSchema = getActiveSchema(selectedType);
 
   const filterColumns = useMemo<FilterColumn[]>(
     () =>
@@ -367,63 +380,72 @@ export default function NotesBoard() {
     }
   };
 
-  const handleSortChange = (
-    sort: string | null,
-    direction: SortDirection | null
-  ) => {
-    if (!selectedType) {
-      return;
-    }
-    const nextSort = sort && direction ? { sort, direction } : null;
-    setNotesSort(nextSort);
-    void loadFirstPage(
-      selectedType,
-      nextSort,
-      filterRules,
-      requestedNotesLimit(notes.length)
-    );
-  };
+  const handleSortChange = useCallback(
+    (sort: string | null, direction: SortDirection | null) => {
+      if (!selectedType) {
+        return;
+      }
+      const nextSort = sort && direction ? { sort, direction } : null;
+      setNotesSort(nextSort);
+      void loadFirstPage(
+        selectedType,
+        nextSort,
+        filterRules,
+        requestedNotesLimit(notes.length)
+      );
+    },
+    [filterRules, loadFirstPage, notes.length, selectedType]
+  );
 
-  const handleEdit = (note: Note) => {
-    setActiveNote(note);
-  };
+  const handleEdit = useCallback(
+    (note: Note) => {
+      setActiveNote(note);
+    },
+    [setActiveNote]
+  );
 
-  const handleCopy = async (note: Note) => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, ...payload } = note;
-      const newNote = await copyNote(payload);
-      showSnackbar('Copied');
-      addNote(newNote);
-    } catch {
-      showSnackbar('Copy failed');
-    }
-  };
+  const handleCopy = useCallback(
+    async (note: Note) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...payload } = note;
+        const newNote = await copyNote(payload);
+        addNote(newNote);
+        showSnackbar('Copied');
+      } catch {
+        showSnackbar('Copy failed');
+      }
+    },
+    [addNote, showSnackbar]
+  );
 
-  const handleDelete = (noteIdValue: string) => {
-    showModal({
-      component: ConfirmModal,
-      props: {
-        title: 'Delete note',
-        message: 'Delete note?',
-        confirmText: 'Delete',
-        confirmVariant: ButtonVariant.DANGER,
-        onCancel: closeModal,
-        onConfirm: () => {
-          void (async () => {
-            closeModal();
-            try {
-              await deleteNotes([noteIdValue]);
-              removeNote(noteIdValue);
-              showSnackbar('Deleted');
-            } catch {
-              showSnackbar('Delete failed');
-            }
-          })();
+  const handleDelete = useCallback(
+    (noteIdValue: string) => {
+      showModal({
+        component: ConfirmModal,
+        props: {
+          title: 'Delete note',
+          message: 'Delete note?',
+          confirmText: 'Delete',
+          confirmVariant: ButtonVariant.DANGER,
+          onCancel: closeModal,
+          onConfirm: () => {
+            void (async () => {
+              closeModal();
+              try {
+                await deleteNotes([noteIdValue]);
+                removeNote(noteIdValue);
+                showSnackbar('Deleted');
+              } catch {
+                showSnackbar('Delete failed');
+              }
+            })();
+          },
         },
-      },
-    });
-  };
+      });
+    },
+    [closeModal, removeNote, showModal, showSnackbar]
+  );
 
   const handleOpenFilters = () => {
     showModal({
@@ -518,20 +540,23 @@ export default function NotesBoard() {
     });
   };
 
-  const handleHeaderClick = (columnId: string, canSort: boolean) => {
-    if (!canSort) {
-      return;
-    }
-    if (notesSort?.sort !== columnId) {
-      handleSortChange(columnId, SortDirection.ASC);
-      return;
-    }
-    if (notesSort?.direction === SortDirection.ASC) {
-      handleSortChange(columnId, SortDirection.DESC);
-      return;
-    }
-    handleSortChange(null, null);
-  };
+  const handleHeaderClick = useCallback(
+    (columnId: string, canSort: boolean) => {
+      if (!canSort) {
+        return;
+      }
+      if (notesSort?.sort !== columnId) {
+        handleSortChange(columnId, SortDirection.ASC);
+        return;
+      }
+      if (notesSort?.direction === SortDirection.ASC) {
+        handleSortChange(columnId, SortDirection.DESC);
+        return;
+      }
+      handleSortChange(null, null);
+    },
+    [handleSortChange, notesSort]
+  );
 
   const displayedNotes = useMemo(() => {
     const filtered = selectedType
@@ -541,10 +566,8 @@ export default function NotesBoard() {
     return filtered ?? [];
   }, [selectedType, notes]);
 
-  const schema = useMemo(() => activeSchema ?? null, [activeSchema]);
-
   const columns = useMemo(() => {
-    const fields: SchemaField[] = schema?.fields ?? [];
+    const fields: SchemaField[] = activeSchema?.fields ?? [];
 
     const selectColumn = columnHelper.display({
       id: 'select',
@@ -645,7 +668,7 @@ export default function NotesBoard() {
         },
       }),
     ];
-  }, [activeSchema, handleCopy, handleDelete, handleEdit, selectedType]);
+  }, [activeSchema, handleCopy, handleDelete, handleEdit]);
 
   const table = useTable({
     features,
@@ -690,7 +713,10 @@ export default function NotesBoard() {
     <>
       <div className={styles.header}>
         <h2>
-          Notes <span className={styles.notesCount}>{notes.length}/{totalNotes}</span>
+          Notes{' '}
+          <span className={styles.notesCount}>
+            {notes.length}/{totalNotes}
+          </span>
         </h2>
         <NotesToolbar
           activeFilterCount={filterRules.length}

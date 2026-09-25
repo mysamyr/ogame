@@ -12,8 +12,11 @@ import NotesBoard from './components/NotesBoard.js';
 import styles from './Dashboard.module.css';
 
 export default function Dashboard() {
-  const { schemas, setSchemas } = useSchemas();
-  const { showSnackbar } = useSnackbar();
+  const { schemas, setSchemas } = useSchemas(state => ({
+    schemas: state.schemas,
+    setSchemas: state.setSchemas,
+  }));
+  const showSnackbar = useSnackbar(state => state.showSnackbar);
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {

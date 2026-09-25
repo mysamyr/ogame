@@ -150,8 +150,20 @@ export async function upsertSchema(descriptor: Schema): Promise<void> {
 
 export async function deleteSchema(id: string): Promise<void> {
   try {
-    await run('DELETE FROM schema_fields WHERE schema_id = ?', [id]);
-    await run('DELETE FROM schemas WHERE id = ?', [id]);
+    await run('BEGIN');
+    try {
+      await run(
+        'DELETE FROM note_values WHERE note_id IN (SELECT id FROM notes WHERE schema = ?)',
+        [id]
+      );
+      await run('DELETE FROM notes WHERE schema = ?', [id]);
+      await run('DELETE FROM schema_fields WHERE schema_id = ?', [id]);
+      await run('DELETE FROM schemas WHERE id = ?', [id]);
+      await run('COMMIT');
+    } catch (error) {
+      await run('ROLLBACK');
+      throw error;
+    }
   } finally {
     invalidateSchema(id);
   }

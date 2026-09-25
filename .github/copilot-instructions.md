@@ -53,6 +53,7 @@ between groups). Run `npm run lint:fix` to group and sort imports.
 
 - Wrap Zustand store queries with `useShallow` to prevent redundant component re-renders.
 - Encapsulate raw Zustand stores inside domain-specific React hooks (e.g., `useNotes()`, `useSchemas()`).
+- Pass selectors to domain-specific Zustand hooks so components subscribe only to the state and actions they use.
 - Prefix unused function arguments with an underscore (e.g., `(_req, res)`).
 - Maintain isolated TypeScript typings (`apps/server/src/types/index.ts` and `apps/client/src/types/index.ts`).
 - Verify work with `npm run typecheck` and `npm run lint`.

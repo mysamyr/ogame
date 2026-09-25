@@ -2,14 +2,8 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { useModalStore } from '../store/index.js';
 
-export function useModal() {
-  return useModalStore(
-    useShallow(s => ({
-      open: s.open,
-      modal: s.modal,
-      showModal: s.showModal,
-      requestCloseModal: s.requestCloseModal,
-      closeModal: s.closeModal,
-    }))
-  );
+type ModalState = ReturnType<typeof useModalStore.getState>;
+
+export function useModal<T>(selector: (state: ModalState) => T) {
+  return useModalStore(useShallow(selector));
 }

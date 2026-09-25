@@ -25,6 +25,7 @@ import {
   getSchemaById,
   upsertSchema,
 } from '../stores/schema.js';
+import { uuid } from '../utils/uuid.js';
 
 export default function createSchemaRouter() {
   const router = Router();
@@ -56,8 +57,13 @@ export default function createSchemaRouter() {
       const notesPage = await getNotes(schema.id);
 
       res.json({
-        ...schema,
-        notes: notesPage.items,
+        name: schema.name,
+        fields: schema.fields,
+        sort: schema.sort,
+        direction: schema.direction,
+        notes: notesPage.items.map(
+          ({ id: _id, schema: _schema, ...note }) => note
+        ),
       });
     })
   );
@@ -105,20 +111,22 @@ export default function createSchemaRouter() {
     '/import',
     validateBody(schemaImportPayload),
     promisify<unknown, void, SchemaImportPayload>(async (req, res) => {
-      const { id, name, fields, notes, sort, direction } = req.body;
+      const { name, fields, notes, sort, direction } = req.body;
+
+      const schemaId = toSnake(name);
 
       await upsertSchema({
-        id,
+        id: schemaId,
         name,
         fields,
         sort,
         direction,
       });
       for (const note of notes) {
-        await upsertNote(note);
+        await upsertNote({ ...note, id: uuid(), schema: schemaId });
       }
 
-      const schema = await getSchemaById(id);
+      const schema = await getSchemaById(schemaId);
       if (!schema) throw new InternalServerError('failed to import schema');
 
       res.sendStatus(204);

@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
 
 import { FieldKind } from '@ogame/shared/constants';
-import { Note } from '@ogame/shared/types';
+import type { Note, Schema } from '@ogame/shared/types';
 import { validateNoteBySchema } from '@ogame/shared/validation/index.js';
-import { FormProvider, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useSearchParams } from 'react-router-dom';
 
-import { saveNote, updateNote } from '../../../api/notes.js';
+import { fetchNotes, saveNote, updateNote } from '../../../api/notes.js';
 import { Button } from '../../../components/index.js';
-import { ButtonVariant } from '../../../constants/index.js';
+import { ButtonVariant, NOTES_PAGE_SIZE } from '../../../constants/index.js';
 import { useNotes, useSchemas, useSnackbar } from '../../../hooks/index.js';
 import {
   coerceRecordToSchema,
@@ -18,12 +18,10 @@ import {
   validateRecordAgainstSchema,
 } from '../../../utils/index.js';
 
-import FieldInput from './FieldInput.js';
+import FieldInput, { type NoteFormValues } from './FieldInput.js';
 import styles from './NoteForm.module.css';
 
-type FormValues = Record<string, string | number | boolean>;
-
-function toFormValue(value: unknown): FormValues[string] {
+function toFormValue(value: unknown): NoteFormValues[string] {
   if (
     typeof value === 'string' ||
     typeof value === 'number' ||
@@ -37,61 +35,71 @@ function toFormValue(value: unknown): FormValues[string] {
   return formatUnknownValue(value);
 }
 
+function createDefaultValues(
+  schema: Schema | null,
+  note: Note | null
+): NoteFormValues {
+  const defaults: NoteFormValues = {};
+
+  schema?.fields.forEach(field => {
+    const value = note?.[field.id];
+    const hasStoredValue = value !== undefined && value !== null;
+
+    if (field.type === FieldKind.BOOLEAN) {
+      defaults[field.id] = hasStoredValue ? toFormValue(value) : false;
+      return;
+    }
+
+    if (hasStoredValue) {
+      defaults[field.id] = toFormValue(value);
+      return;
+    }
+
+    if (field.type === FieldKind.TIME) {
+      defaults[field.id] = field.required ? nowTime() : '';
+    } else if (field.type === FieldKind.DATE) {
+      defaults[field.id] = field.required ? todayDate() : '';
+    } else {
+      defaults[field.id] = '';
+    }
+  });
+
+  return defaults;
+}
+
 export default function NoteForm() {
-  const { getActiveSchema } = useSchemas();
-  const { showSnackbar } = useSnackbar();
+  const [searchParams] = useSearchParams();
+  const selectedType = searchParams.get('type')?.trim() ?? '';
+  const activeSchema = useSchemas(
+    state => state.schemas.find(schema => schema.id === selectedType) ?? null
+  );
+  const showSnackbar = useSnackbar(state => state.showSnackbar);
   const {
     activeNote,
+    loadedNotesCount,
     setActiveNote,
+    setNotes,
     updateNote: updateStateNote,
-    addNote,
-  } = useNotes();
-  const [searchParams] = useSearchParams();
-
-  const selectedType = searchParams.get('type')?.trim() ?? '';
-  const activeSchema = getActiveSchema(selectedType);
-
-  const getDefaultValues = (): FormValues => {
-    const defaults: FormValues = {};
-
-    activeSchema?.fields.forEach(field => {
-      const val = activeNote?.[field.id];
-      const hasStoredValue = val !== undefined && val !== null;
-
-      if (field.type === FieldKind.BOOLEAN) {
-        defaults[field.id] = hasStoredValue ? toFormValue(val) : false;
-        return;
-      }
-
-      if (hasStoredValue) {
-        defaults[field.id] = toFormValue(val);
-        return;
-      }
-
-      if (field.type === FieldKind.NUMBER) {
-        defaults[field.id] = '';
-      } else if (field.type === FieldKind.TIME) {
-        defaults[field.id] = field.required ? nowTime() : '';
-      } else if (field.type === FieldKind.DATE) {
-        defaults[field.id] = field.required ? todayDate() : '';
-      } else {
-        defaults[field.id] = '';
-      }
-    });
-
-    return defaults;
-  };
-
-  const methods = useForm<FormValues>({
-    defaultValues: getDefaultValues(),
+  } = useNotes(state => ({
+    activeNote: state.activeNote,
+    loadedNotesCount: state.notes.length,
+    setActiveNote: state.setActiveNote,
+    setNotes: state.setNotes,
+    updateNote: state.updateNote,
+  }));
+  const methods = useForm<NoteFormValues>({
+    defaultValues: createDefaultValues(activeSchema, activeNote),
     mode: 'onBlur',
   });
   const {
     clearErrors,
+    control,
     handleSubmit,
+    register,
     reset,
     setError,
     setFocus,
+    setValue,
     watch,
   } = methods;
   const values = watch();
@@ -101,15 +109,15 @@ export default function NoteForm() {
   );
 
   useEffect(() => {
-    reset(getDefaultValues());
+    reset(createDefaultValues(activeSchema, activeNote));
   }, [activeNote, selectedType, activeSchema]);
 
   const resetForm = () => {
-    reset(getDefaultValues());
+    reset(createDefaultValues(activeSchema, activeNote));
     setActiveNote(null);
   };
 
-  const onSubmit = async (data: FormValues) => {
+  const onSubmit = async (data: NoteFormValues) => {
     if (!activeSchema) return;
 
     const coerced = coerceRecordToSchema(data, activeSchema.fields);
@@ -136,7 +144,7 @@ export default function NoteForm() {
     };
 
     // Remove optional fields that are empty/falsy
-    activeSchema?.fields.forEach(field => {
+    activeSchema.fields.forEach(field => {
       if (!field.required) {
         const val = payload[field.id];
         if (val === '' || val === undefined) {
@@ -184,8 +192,18 @@ export default function NoteForm() {
         updateStateNote(activeNote.id, payload);
         showSnackbar('Note updated successfully');
       } else {
-        const newNote = await saveNote(payload);
-        addNote(newNote);
+        await saveNote(payload);
+        const page = await fetchNotes(activeSchema.id, {
+          limit: Math.max(loadedNotesCount + 1, NOTES_PAGE_SIZE),
+          offset: 0,
+          ...(activeSchema.sort && activeSchema.direction
+            ? {
+                sort: activeSchema.sort,
+                direction: activeSchema.direction,
+              }
+            : {}),
+        });
+        setNotes(page.items);
         showSnackbar('Note created successfully');
       }
       resetForm();
@@ -202,33 +220,37 @@ export default function NoteForm() {
         <>
           <h2>{activeNote ? 'Edit Note' : 'Create Note'}</h2>
 
-          <FormProvider {...methods}>
-            <form
-              className={styles.form}
-              onSubmit={event => void handleSubmit(onSubmit)(event)}
-            >
-              <div className={styles.fields}>
-                {activeSchema?.fields.map(field => (
-                  <FieldInput key={field.name} field={field} />
-                ))}
-              </div>
+          <form
+            className={styles.form}
+            onSubmit={event => void handleSubmit(onSubmit)(event)}
+          >
+            <div className={styles.fields}>
+              {activeSchema.fields.map(field => (
+                <FieldInput
+                  key={field.id}
+                  control={control}
+                  field={field}
+                  register={register}
+                  setValue={setValue}
+                />
+              ))}
+            </div>
 
-              <div className={styles.buttons}>
-                <Button
-                  type="submit"
-                  id="save-btn"
-                  disabled={!recordValidation.isValid}
-                >
-                  {activeNote ? 'Update' : 'Save'}
+            <div className={styles.buttons}>
+              <Button
+                type="submit"
+                id="save-btn"
+                disabled={!recordValidation.isValid}
+              >
+                {activeNote ? 'Update' : 'Save'}
+              </Button>
+              {activeNote ? (
+                <Button variant={ButtonVariant.SECONDARY} onClick={resetForm}>
+                  Cancel
                 </Button>
-                {activeNote ? (
-                  <Button variant={ButtonVariant.SECONDARY} onClick={resetForm}>
-                    Cancel
-                  </Button>
-                ) : null}
-              </div>
-            </form>
-          </FormProvider>
+              ) : null}
+            </div>
+          </form>
         </>
       ) : (
         <p className={styles.placeholder}>No schema available</p>

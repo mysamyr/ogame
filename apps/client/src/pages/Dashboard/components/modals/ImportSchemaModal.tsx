@@ -1,11 +1,12 @@
-import { useState, type ReactElement } from 'react';
+import { useState, type ChangeEvent, type ReactElement } from 'react';
 
+import { NAME_REGEX } from '@ogame/shared/constants';
 import {
   SchemaImportPayload,
   schemaImportPayload,
 } from '@ogame/shared/validation';
 
-import { Button } from '../../../../components/index.js';
+import { Button, Input } from '../../../../components/index.js';
 import { ButtonVariant } from '../../../../constants/index.js';
 
 import styles from './ImportSchemaModal.module.css';
@@ -21,9 +22,16 @@ export default function ImportSchemaModal({
   onError,
   onCancel,
 }: Props): ReactElement {
-  const [file, setFile] = useState<File | null>(null);
+  const [payload, setPayload] = useState<SchemaImportPayload | null>(null);
+  const [name, setName] = useState('');
+  const [nameError, setNameError] = useState<string | null>(null);
 
-  const handleImport = () => {
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    setPayload(null);
+    setName('');
+    setNameError(null);
+
     if (!file) return;
 
     void (async () => {
@@ -38,11 +46,27 @@ export default function ImportSchemaModal({
           return;
         }
 
-        onImport(result.data);
+        setPayload(result.data);
+        setName(result.data.name);
       } catch {
         onError('File is not a valid JSON file');
       }
     })();
+  };
+
+  const handleImport = () => {
+    if (!payload) return;
+
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0 || !NAME_REGEX.test(trimmedName)) {
+      setNameError('Invalid name format');
+      return;
+    }
+
+    onImport({
+      ...payload,
+      name: trimmedName,
+    });
   };
 
   return (
@@ -62,16 +86,28 @@ export default function ImportSchemaModal({
         <input
           type="file"
           accept="application/json,.json"
-          onChange={event => {
-            setFile(event.target.files?.[0] ?? null);
-          }}
+          onChange={handleFileChange}
         />
+        {payload && (
+          <label className={styles.nameField}>
+            Schema name
+            <Input
+              type="text"
+              value={name}
+              onChange={event => {
+                setName(event.target.value);
+                setNameError(null);
+              }}
+            />
+            {nameError && <p className={styles.error}>{nameError}</p>}
+          </label>
+        )}
       </div>
       <div className={styles.actions}>
         <Button variant={ButtonVariant.SECONDARY} onClick={onCancel}>
           Cancel
         </Button>
-        <Button onClick={handleImport} disabled={!file}>
+        <Button onClick={handleImport} disabled={!payload}>
           Import
         </Button>
       </div>

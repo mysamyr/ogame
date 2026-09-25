@@ -1,7 +1,16 @@
+import { memo } from 'react';
+
 import { FieldKind } from '@ogame/shared/constants';
 import { SchemaField } from '@ogame/shared/types';
 import { toCapital } from '@ogame/shared/utils';
-import { RegisterOptions, useFormContext } from 'react-hook-form';
+import {
+  type Control,
+  type RegisterOptions,
+  type UseFormRegister,
+  type UseFormSetValue,
+  useFormState,
+  useWatch,
+} from 'react-hook-form';
 
 import { Checkbox, Input, RequiredMarker } from '../../../components/index.js';
 import {
@@ -12,21 +21,30 @@ import {
 
 import styles from './FieldInput.module.css';
 
+export type NoteFormValues = Record<string, string | number | boolean>;
+
 type Props = {
+  control: Control<NoteFormValues>;
   field: SchemaField;
   placeholder?: string;
-  rules?: RegisterOptions;
+  register: UseFormRegister<NoteFormValues>;
+  rules?: RegisterOptions<NoteFormValues>;
+  setValue: UseFormSetValue<NoteFormValues>;
 };
 
-export default function FieldInput({ field, placeholder, rules }: Props) {
-  const {
-    register,
-    setValue,
-    watch,
-    formState: { errors, touchedFields },
-  } = useFormContext<Record<string, unknown>>();
-
-  const value = watch(field.id);
+function FieldInput({
+  control,
+  field,
+  placeholder,
+  register,
+  rules,
+  setValue,
+}: Props) {
+  const value = useWatch({ control, name: field.id });
+  const { errors, touchedFields } = useFormState({
+    control,
+    name: field.id,
+  });
   const isErrorVisible = Boolean(touchedFields[field.id]);
   const parserError = isErrorVisible
     ? validateRecordAgainstSchema({ [field.id]: value }, [field]).errors[
@@ -83,7 +101,7 @@ export default function FieldInput({ field, placeholder, rules }: Props) {
             : false,
           valueAsNumber: field.type === FieldKind.NUMBER || undefined,
           ...rules,
-        } as RegisterOptions)}
+        } as RegisterOptions<NoteFormValues>)}
       />
       {errorMessage ? (
         <span className={styles.errorText}>{errorMessage}</span>
@@ -91,3 +109,5 @@ export default function FieldInput({ field, placeholder, rules }: Props) {
     </label>
   );
 }
+
+export default memo(FieldInput);

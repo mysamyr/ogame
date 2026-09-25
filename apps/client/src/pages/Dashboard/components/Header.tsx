@@ -14,14 +14,23 @@ import SchemaModal from './modals/SchemaModal.js';
 
 export default function Header() {
   const {
-    schemas,
-    getActiveSchema,
     addSchema,
-    updateSchema: updateStateSchema,
+    getActiveSchema,
     removeSchema,
-  } = useSchemas();
-  const { showModal, closeModal } = useModal();
-  const { showSnackbar } = useSnackbar();
+    schemas,
+    updateSchema: updateStateSchema,
+  } = useSchemas(state => ({
+    addSchema: state.addSchema,
+    getActiveSchema: state.getActiveSchema,
+    removeSchema: state.removeSchema,
+    schemas: state.schemas,
+    updateSchema: state.updateSchema,
+  }));
+  const { closeModal, showModal } = useModal(state => ({
+    closeModal: state.closeModal,
+    showModal: state.showModal,
+  }));
+  const showSnackbar = useSnackbar(state => state.showSnackbar);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedType = searchParams.get('type') ?? '';
