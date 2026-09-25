@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM node:24-bookworm-slim AS base
+# trixie (glibc 2.41): sqlite3's arm64 prebuild requires GLIBC_2.38, bookworm only has 2.36.
+FROM node:24-trixie-slim AS base
 
 WORKDIR /app
 
