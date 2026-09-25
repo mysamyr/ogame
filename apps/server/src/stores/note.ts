@@ -7,7 +7,9 @@ import {
 import type { Note, NotesPage } from '@ogame/shared/types';
 import type { FilterRule, GetNotesQuery } from '@ogame/shared/validation';
 
+import { cacheKeys, queryCache } from '../services/cache.js';
 import { get, list, run } from '../services/db.js';
+import { sha256 } from '../utils/hash.js';
 
 type NoteRecord = {
   id: string;
@@ -25,6 +27,10 @@ type FieldTypeRecord = {
 
 type CountRecord = {
   total: number;
+};
+
+type NoteSchemaRecord = {
+  schema: string;
 };
 
 export type ResolvedFilterRule = FilterRule & {
@@ -177,6 +183,34 @@ function parseNote(row: NoteRecord): Note {
   };
 }
 
+function getNotesCacheKey(schemaId: string, config?: GetNotesConfig): string {
+  const hasSort = Boolean(config?.sort && config.direction && config.sortKind);
+  const normalizedConfig = {
+    limit: config?.limit ?? null,
+    offset: config?.offset ?? 0,
+    sort: hasSort ? config?.sort : null,
+    direction: hasSort ? config?.direction : null,
+    sortKind: hasSort ? config?.sortKind : null,
+    filters: (config?.filters ?? []).map(rule => ({
+      column: rule.column,
+      operator: rule.operator,
+      value: rule.value,
+      logicalOperator: rule.logicalOperator,
+      kind: rule.kind,
+    })),
+  };
+
+  return `${cacheKeys.notes(schemaId)}${sha256(
+    JSON.stringify(normalizedConfig)
+  )}`;
+}
+
+function invalidateNotes(schemaIds: Iterable<string>): void {
+  for (const schemaId of new Set(schemaIds)) {
+    queryCache.deleteByPrefix(cacheKeys.notes(schemaId));
+  }
+}
+
 async function withTransaction(fn: () => Promise<void>): Promise<void> {
   await run('BEGIN');
   try {
@@ -242,6 +276,15 @@ async function replaceNoteValues(
 }
 
 export async function getNotes(
+  schemaId: string,
+  config?: GetNotesConfig
+): Promise<NotesPage> {
+  return queryCache.getOrSet(getNotesCacheKey(schemaId, config), () =>
+    loadNotes(schemaId, config)
+  );
+}
+
+async function loadNotes(
   schemaId: string,
   config?: GetNotesConfig
 ): Promise<NotesPage> {
@@ -333,10 +376,15 @@ export async function addNote(note: Note): Promise<void> {
     await run('INSERT INTO notes (id, schema) VALUES (?, ?)', [id, schema]);
     await replaceNoteValues(id, schema, payload);
   });
+  invalidateNotes([schema]);
 }
 
 export async function upsertNote(note: Note): Promise<void> {
   const { id, schema, ...payload } = note;
+  const existing = await get<NoteSchemaRecord>(
+    'SELECT schema FROM notes WHERE id = ?',
+    [id]
+  );
   await withTransaction(async () => {
     await run(
       'INSERT INTO notes (id, schema) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET schema = excluded.schema',
@@ -344,6 +392,7 @@ export async function upsertNote(note: Note): Promise<void> {
     );
     await replaceNoteValues(id, schema, payload);
   });
+  invalidateNotes(existing ? [existing.schema, schema] : [schema]);
 }
 
 export async function deleteNotes(ids: string[]): Promise<void> {
@@ -351,5 +400,10 @@ export async function deleteNotes(ids: string[]): Promise<void> {
     return;
   }
   const placeholders = ids.map(() => '?').join(', ');
+  const affectedSchemas = await list<NoteSchemaRecord>(
+    `SELECT DISTINCT schema FROM notes WHERE id IN (${placeholders})`,
+    ids
+  );
   await run(`DELETE FROM notes WHERE id IN (${placeholders})`, ids);
+  invalidateNotes(affectedSchemas.map(row => row.schema));
 }

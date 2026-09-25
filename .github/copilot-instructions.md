@@ -9,7 +9,9 @@
   and nullable `string` / `number` / `boolean` / `date` / `time` columns; composite PK
   `(note_id, field_id)`). Schemas use `schemas` + `schema_fields` (including server-only
   `position` on fields; API/client order is the `fields[]` array index). Foreign keys are
-  enabled via `PRAGMA foreign_keys = ON`.
+  enabled via `PRAGMA foreign_keys = ON`. The database path can be configured with `DB_PATH`;
+  production Docker deployments use `/app/data/store.db`.
+- **Deployment**: A multi-stage `Dockerfile` builds the shared package, server, and Vite client into a Node 24 runtime image. `compose.yaml` exposes the app on port 3000 and persists SQLite data in the `ogame-data` volume.
 - **Styling**: **CSS Modules** (`*.module.css`) and `/apps/client/public/style.css`. Utility CSS frameworks (e.g.,
   Tailwind) and inline CSS are strictly prohibited.
 - **Dashboard notes rendering**: `NotesBoard` owns the table rendering, sorting, pagination, and validation logic; `NotesTable`
@@ -35,6 +37,10 @@
   serialized into standard `ApiErrorPayload` by `errorHandlerMiddleware`.
 - SQL execution is prohibited in routers. Queries belong strictly in `stores/` using promisified SQLite database
   wrappers `run()`, `list()`, or `get()`.
+- Server query caching is process-local via `services/cache.ts`, with a 30-second TTL and 500-entry LRU cap.
+  `getNotes`, `getAllSchemas`, and `getSchemaById` are cached; store mutation functions own invalidation of affected
+  schema and note-query key namespaces so callers cannot bypass cache coherence. Note-query keys retain the schema
+  namespace and use a SHA-256 digest of the normalized query configuration to keep key sizes bounded.
 
 ## Code Conventions & Constraints
 

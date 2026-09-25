@@ -1,0 +1,13 @@
+services:
+  ogame:
+    build:
+      context: .
+    ports:
+      - "3000:3000"
+    environment:
+      DB_PATH: /app/data/store.db
+    volumes:
+      - ogame-data:/app/data
+
+volumes:
+  ogame-data:

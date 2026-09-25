@@ -1,0 +1,16 @@
+.git
+.github
+.husky
+.idea
+.vscode
+node_modules
+**/dist
+**/*.tsbuildinfo
+**/*.db
+**/*.db-*
+assets
+npm-debug.log*
+Dockerfile
+compose.yaml
+docker-compose.yml
+README.md

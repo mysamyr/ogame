@@ -1,6 +1,7 @@
 import { FieldKind, SortDirection } from '@ogame/shared/constants';
 import { Schema } from '@ogame/shared/types';
 
+import { cacheKeys, queryCache } from '../services/cache.js';
 import { list, run } from '../services/db.js';
 
 type SchemaJoinRecord = {
@@ -93,6 +94,10 @@ const SCHEMA_JOIN_SQL = `
 `;
 
 export async function getAllSchemas(): Promise<Schema[]> {
+  return queryCache.getOrSet(cacheKeys.allSchemas, loadAllSchemas);
+}
+
+async function loadAllSchemas(): Promise<Schema[]> {
   const rows = await list<SchemaJoinRecord>(
     `${SCHEMA_JOIN_SQL} ORDER BY s.name, f.position`
   );
@@ -100,6 +105,10 @@ export async function getAllSchemas(): Promise<Schema[]> {
 }
 
 export async function getSchemaById(id: string): Promise<Schema | null> {
+  return queryCache.getOrSet(cacheKeys.schema(id), () => loadSchemaById(id));
+}
+
+async function loadSchemaById(id: string): Promise<Schema | null> {
   const rows = await list<SchemaJoinRecord>(
     `${SCHEMA_JOIN_SQL} WHERE s.id = ? ORDER BY f.position`,
     [id]
@@ -108,24 +117,42 @@ export async function getSchemaById(id: string): Promise<Schema | null> {
   return nestSchemas(rows)[0] ?? null;
 }
 
+function invalidateSchema(id: string): void {
+  queryCache.delete(cacheKeys.allSchemas);
+  queryCache.delete(cacheKeys.schema(id));
+  queryCache.deleteByPrefix(cacheKeys.notes(id));
+}
+
 export async function createSchema(descriptor: Schema): Promise<void> {
-  await run(
-    'INSERT INTO schemas (id, name, sort, direction) VALUES (?, ?, ?, ?)',
-    [descriptor.id, descriptor.name, descriptor.sort, descriptor.direction]
-  );
-  await insertSchemaFields(descriptor.id, descriptor.fields);
+  try {
+    await run(
+      'INSERT INTO schemas (id, name, sort, direction) VALUES (?, ?, ?, ?)',
+      [descriptor.id, descriptor.name, descriptor.sort, descriptor.direction]
+    );
+    await insertSchemaFields(descriptor.id, descriptor.fields);
+  } finally {
+    invalidateSchema(descriptor.id);
+  }
 }
 
 export async function upsertSchema(descriptor: Schema): Promise<void> {
-  await run(
-    'INSERT INTO schemas (id, name, sort, direction) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name, sort = excluded.sort, direction = excluded.direction',
-    [descriptor.id, descriptor.name, descriptor.sort, descriptor.direction]
-  );
-  await run('DELETE FROM schema_fields WHERE schema_id = ?', [descriptor.id]);
-  await insertSchemaFields(descriptor.id, descriptor.fields);
+  try {
+    await run(
+      'INSERT INTO schemas (id, name, sort, direction) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET name = excluded.name, sort = excluded.sort, direction = excluded.direction',
+      [descriptor.id, descriptor.name, descriptor.sort, descriptor.direction]
+    );
+    await run('DELETE FROM schema_fields WHERE schema_id = ?', [descriptor.id]);
+    await insertSchemaFields(descriptor.id, descriptor.fields);
+  } finally {
+    invalidateSchema(descriptor.id);
+  }
 }
 
 export async function deleteSchema(id: string): Promise<void> {
-  await run('DELETE FROM schema_fields WHERE schema_id = ?', [id]);
-  await run('DELETE FROM schemas WHERE id = ?', [id]);
+  try {
+    await run('DELETE FROM schema_fields WHERE schema_id = ?', [id]);
+    await run('DELETE FROM schemas WHERE id = ?', [id]);
+  } finally {
+    invalidateSchema(id);
+  }
 }

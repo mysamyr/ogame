@@ -17,3 +17,4 @@ dist
 # Custom
 /assets
 /apps/server/store.db
+/data/

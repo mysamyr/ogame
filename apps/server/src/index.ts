@@ -19,13 +19,15 @@ app.use('/api/schema', createSchemaRouter());
 app.use('/api/note', createNoteRouter());
 
 app.use(
-  express.static(path.join(import.meta.dirname, '..', '..', 'client', 'dist'))
+  express.static(
+    path.join(import.meta.dirname, '..', '..', 'apps', 'client', 'dist')
+  )
 );
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT ?? 3000);
 
 void ensureStoreExists()
   .catch(err => {
