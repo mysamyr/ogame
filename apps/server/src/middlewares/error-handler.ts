@@ -5,6 +5,8 @@ import {
 } from '@ogame/shared/errors';
 import type { NextFunction, Request, Response } from 'express';
 
+import { NODE_ENV } from '../config/index.js';
+
 export function notFoundMiddleware(
   req: Request,
   res: Response,
@@ -30,7 +32,7 @@ export function errorHandlerMiddleware(
     );
     res.status(err.statusCode).json({
       ...err.toPayload(),
-      ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+      ...(NODE_ENV !== 'production' && { stack: err.stack }),
     });
     return;
   }
@@ -44,6 +46,6 @@ export function errorHandlerMiddleware(
 
   res.status(statusCode).json({
     ...internalError.toPayload(),
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+    ...(NODE_ENV !== 'production' && { stack: err.stack }),
   });
 }

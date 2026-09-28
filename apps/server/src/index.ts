@@ -2,6 +2,7 @@ import path from 'path';
 
 import express from 'express';
 
+import { PORT } from './config/index.js';
 import {
   errorHandlerMiddleware,
   notFoundMiddleware,
@@ -26,8 +27,6 @@ app.use(
 
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
-
-const PORT = Number(process.env.PORT ?? 3000);
 
 void ensureStoreExists()
   .catch(err => {

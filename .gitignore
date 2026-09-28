@@ -18,3 +18,4 @@ dist
 /assets
 /apps/server/store.db
 /data/
+.env

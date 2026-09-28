@@ -11,26 +11,38 @@
   `position` on fields; API/client order is the `fields[]` array index). Foreign keys are
   enabled via `PRAGMA foreign_keys = ON`. The database path can be configured with `DB_PATH`;
   production Docker deployments use `/app/data/store.db`.
-- **Deployment**: A multi-stage `Dockerfile` builds the shared package, server, and Vite client into a Node 24 runtime image. `compose.yaml` exposes the app on port 3000 and persists SQLite data in the `ogame-data` volume.
+- **Server config**: `apps/server/src/config/index.ts` loads `apps/server/.env` via `process.loadEnvFile` (silently
+  skipped if missing) and exports `PORT` (3000), `NODE_ENV` (`development`), and `DB_PATH` (`apps/server/store.db`).
+  Server code **MUST** import these constants instead of reading `process.env` directly.
+- **Deployment**: A multi-stage `Dockerfile` builds the shared package, server, and Vite client into a Node 24 runtime
+  image. `compose.yaml` exposes the app on host port `APP_PORT` (default `3000`) and container port `3000`, and persists
+  SQLite data in the `ogame-data` volume.
 - **Styling**: **CSS Modules** (`*.module.css`) and `/apps/client/public/style.css`. Utility CSS frameworks (e.g.,
   Tailwind) and inline CSS are strictly prohibited.
-- **Dashboard notes rendering**: `NotesBoard` owns the table rendering, sorting, pagination, and validation logic; `NotesTable`
+- **Dashboard notes rendering**: `NotesBoard` owns the table rendering, sorting, pagination, and validation logic;
+  `NotesTable`
   is removed and its CSS was merged into `NotesBoard.module.css` to keep the dashboard view self-contained.
-- **Schema modal composition**: `SchemaModal` owns the schema editor form logic and stylesheet, with the editor UI nested
+- **Schema modal composition**: `SchemaModal` owns the schema editor form logic and stylesheet, with the editor UI
+  nested
   inside the modal and shared styling moved into `SchemaModal.module.css` instead of a separate `SchemaForm` file.
 - **Field / filter reorder UI**: Handle-only HTML5 drag-and-drop via `useFieldArray.move` (no DnD libraries). Grip
-  lives left of the name control in `SchemaModal`'s nested editor and `FilterBuilderModal`; order is the `fields[]` / `rules[]`
+  lives left of the name control in `SchemaModal`'s nested editor and `FilterBuilderModal`; order is the `fields[]` /
+  `rules[]`
   array index on submit/apply.
 - **Imports (ESM)**: Local imports **MUST** end in `.js` (e.g., `import x from './x.js'`) per
   `"moduleResolution": "NodeNext"`.
 
 ## API & Data Patterns
 
-- Managed in `api/index.ts` via custom `Api` fetch client. Serializes non-2xx responses via `hydrateApiError`, throwing strongly-typed `AppError` subclasses (e.g., `NotFoundError`, `ValidationError`).
-- Notes are filtered, sorted, and paginated by `GET /api/note/:schemaId`. Ordered filter rules are sent as URL-encoded JSON in
-  the `filters` query parameter, validated against the selected schema in the router, and compiled to parameterized SQLite
+- Managed in `api/index.ts` via custom `Api` fetch client. Serializes non-2xx responses via `hydrateApiError`, throwing
+  strongly-typed `AppError` subclasses (e.g., `NotFoundError`, `ValidationError`).
+- Notes are filtered, sorted, and paginated by `GET /api/note/:schemaId`. Ordered filter rules are sent as URL-encoded
+  JSON in
+  the `filters` query parameter, validated against the selected schema in the router, and compiled to parameterized
+  SQLite
   predicates in the note store before sorting and pagination.
-- Standardized error handling contracts live in `@ogame/shared/errors` (`ErrorCode`, `ApiErrorPayload`, `AppError`, domain subclasses, `isApiError`, and `hydrateApiError`).
+- Standardized error handling contracts live in `@ogame/shared/errors` (`ErrorCode`, `ApiErrorPayload`, `AppError`,
+  domain subclasses, `isApiError`, and `hydrateApiError`).
 - Router functions **MUST** wrap async callbacks in `promisify` middleware to route uncaught rejections to the global
   error handler.
 - POST/PUT routes **MUST** validate bodies with Zod schemas. On fail, throw `ValidationError` to be captured and

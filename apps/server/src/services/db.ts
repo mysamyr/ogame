@@ -1,9 +1,7 @@
-import path from 'path';
-
 import sqlite3 from 'sqlite3';
 
-const DB_PATH =
-  process.env.DB_PATH ?? path.join(import.meta.dirname, '..', '..', 'store.db');
+import { DB_PATH } from '../config/index.js';
+
 const db = new sqlite3.Database(DB_PATH);
 
 export function run(sql: string, params: unknown[] = []): Promise<void> {

@@ -121,6 +121,14 @@ The app is exposed on:
 http://localhost:3000
 ```
 
+Set `APP_PORT` to change the host port while keeping the container port at `3000`:
+
+```bash
+APP_PORT=8080 docker compose up --build
+```
+
+Alternatively, add `APP_PORT=8080` to a `.env` file next to `compose.yaml`, then run Compose as usual.
+
 SQLite data is persisted in Docker volume:
 
 ```text
